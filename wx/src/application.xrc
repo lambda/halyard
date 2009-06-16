@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <resource version="2.3.0.1" xmlns="http://www.wxwidgets.org/wxxrc">
     <object class="wxDialog" name="DLG_STARTUP">
         <exstyle>wxWS_EX_BLOCK_EVENTS</exstyle>
@@ -9,53 +9,60 @@
             <object class="sizeritem">
                 <flag>wxALIGN_LEFT|wxALL</flag>
                 <border>10</border>
-                <object class="wxRadioButton" name="DLG_STARTUP_NEW">
-                    <label>Create a &amp;new program.</label>
-                    <value>0</value>
-                </object>
-            </object>
-            <object class="sizeritem">
-                <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxBOTTOM</flag>
-                <border>10</border>
-                <object class="wxRadioButton" name="DLG_STARTUP_OPEN">
-                    <label>&amp;Open an existing program.</label>
-                    <value>0</value>
-                </object>
-            </object>
-            <object class="sizeritem">
-                <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxBOTTOM</flag>
-                <border>10</border>
-                <object class="wxRadioButton" name="DLG_STARTUP_RECENT">
-                    <label>Open a &amp;recent program:</label>
-                    <value>0</value>
+                <object class="wxStaticText" name="wxID_STATIC">
+                    <label>Recent programs:</label>
                 </object>
             </object>
             <object class="sizeritem">
                 <flag>wxGROW|wxLEFT|wxRIGHT|wxBOTTOM</flag>
                 <border>10</border>
                 <object class="wxListBox" name="DLG_STARTUP_LIST">
-                    <size>300,100</size>
+                    <size>300,200</size>
                     <style>wxLB_ALWAYS_SB</style>
                 </object>
             </object>
             <object class="sizeritem">
-                <flag>wxALIGN_RIGHT|wxLEFT|wxRIGHT|wxBOTTOM</flag>
+                <flag>wxALIGN_RIGHT|wxLEFT|wxBOTTOM</flag>
                 <border>10</border>
                 <object class="wxBoxSizer">
                     <orient>wxHORIZONTAL</orient>
                     <object class="sizeritem">
-                        <flag>wxALIGN_TOP|wxRIGHT</flag>
+                        <flag>wxALIGN_CENTER_VERTICAL|wxRIGHT</flag>
                         <border>10</border>
-                        <object class="wxButton" name="wxID_OK">
-                            <label>OK</label>
-                            <default>1</default>
+                        <object class="wxButton" name="DLG_STARTUP_NEW">
+                            <label>New program...</label>
                         </object>
                     </object>
                     <object class="sizeritem">
                         <flag>wxALIGN_CENTER_VERTICAL</flag>
+                        <border>10</border>
+                        <object class="wxButton" name="DLG_STARTUP_OPEN">
+                            <label>Open program...</label>
+                        </object>
+                    </object>
+                    <object class="spacer">
+                        <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
                         <border>5</border>
-                        <object class="wxButton" name="wxID_CANCEL">
-                            <label>Cancel</label>
+                        <size>25,5</size>
+                    </object>
+                    <object class="sizeritem">
+                        <flag>wxALIGN_CENTER_VERTICAL</flag>
+                        <border>5</border>
+                        <object class="wxStdDialogButtonSizer">
+                            <object class="button">
+                                <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_OK">
+                                    <label>&amp;Choose</label>
+                                </object>
+                            </object>
+                            <object class="button">
+                                <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_CANCEL">
+                                    <label>&amp;Cancel</label>
+                                </object>
+                            </object>
                         </object>
                     </object>
                 </object>
@@ -65,7 +72,6 @@
     <object class="wxDialog" name="DLG_FIND_REPLACE" subclass="MyDialog">
         <style>wxCAPTION|wxRESIZE_BORDER|wxSYSTEM_MENU|wxCLOSE_BOX|wxTAB_TRAVERSAL</style>
         <exstyle>wxWS_EX_BLOCK_EVENTS</exstyle>
-        <size>400,300</size>
         <title>Find &amp; Replace</title>
         <centered>1</centered>
         <object class="wxBoxSizer">
@@ -335,6 +341,7 @@ to run this program?</label>
                 <flag>wxGROW|wxALL|wxADJUST_MINSIZE</flag>
                 <border>5</border>
                 <object class="wxStaticText" name="wxID_STATIC">
+                    <label></label>
                 </object>
             </object>
             <object class="sizeritem">
@@ -372,7 +379,6 @@ to run this program?</label>
     <object class="wxDialog" name="DLG_META_DOT" subclass="MyDialog">
         <style>wxCAPTION|wxRESIZE_BORDER|wxSYSTEM_MENU|wxCLOSE_BOX</style>
         <exstyle>wxWS_EX_BLOCK_EVENTS</exstyle>
-        <size>400,300</size>
         <title>Choose Definition</title>
         <centered>1</centered>
         <object class="wxBoxSizer">

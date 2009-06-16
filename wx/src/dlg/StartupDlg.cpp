@@ -29,49 +29,61 @@
 using namespace Halyard;
 
 BEGIN_EVENT_TABLE(StartupDlg, XrcDlg)
-    //EVT_RADIOBUTTON(XRCID("DLG_STARTUP_NEW"), StartupDlg::OnNew)
-    //EVT_RADIOBUTTON(XRCID("DLG_STARTUP_OPEN"), StartupDlg::OnOpen)
-    //EVT_RADIOBUTTON(XRCID("DLG_STARTUP_RECENT"), StartupDlg::OnRecent)
-    EVT_BUTTON(wxID_OK, StartupDlg::OnOK)
+    EVT_BUTTON(XRCID("DLG_STARTUP_NEW"), StartupDlg::OnNew)
+    EVT_BUTTON(XRCID("DLG_STARTUP_OPEN"), StartupDlg::OnOpen)
+    EVT_BUTTON(wxID_OK, StartupDlg::OnRecent)
 END_EVENT_TABLE()
 
 StartupDlg::StartupDlg(wxWindow *inParent)
     : XrcDlg(inParent, wxT("DLG_STARTUP"))
 {
-    Bind(mRadioNew, XRCID("DLG_STARTUP_NEW"));
-    Bind(mRadioOpen, XRCID("DLG_STARTUP_OPEN"));
-    Bind(mRadioRecent, XRCID("DLG_STARTUP_RECENT"));
     Bind(mRecentList, XRCID("DLG_STARTUP_LIST"));
+    Bind(mNew, XRCID("DLG_STARTUP_NEW"));
+    Bind(mRecent, wxID_OK);
 
     // Load our file history.
     shared_ptr<wxConfigBase> config(new wxConfig);
     config->SetPath(wxT("/Recent"));
     mHistory.Load(*config);
     if (mHistory.GetCount() == 0) {
-        mRadioRecent->Disable();
+        mRecent->Disable();
         mRecentList->Disable();
-        mRadioNew->SetValue(true);
+        mNew->SetDefault();
     } else {
         // Insert our files into our dialog box.
         std::vector<wxString> files;
         for (size_t i = 0; i < mHistory.GetCount(); i++)
             files.push_back(mHistory.GetHistoryFile(i));
         mRecentList->InsertItems(files.size(), &files[0], 0);
-        mRadioRecent->SetValue(true);
+        mRecent->SetDefault();
         mRecentList->Select(0);
     }
 }
 
-void StartupDlg::OnOK(wxCommandEvent &inEvent) {
+void StartupDlg::OnNew(wxCommandEvent &inEvent) {
     Hide();
 
     BEGIN_EXCEPTION_TRAPPER()
-
-    if (mRadioNew->GetValue()) {
         wxGetApp().GetStageFrame()->NewDocument();
-    } else if (mRadioOpen->GetValue()) {
+    END_EXCEPTION_TRAPPER(TException::ReportException)
+    
+    EndModal(XRCID("DLG_STARTUP_NEW"));
+}
+
+void StartupDlg::OnOpen(wxCommandEvent &inEvent) {
+    Hide();
+
+    BEGIN_EXCEPTION_TRAPPER()
         wxGetApp().GetStageFrame()->OpenDocument();
-    } else if (mRadioRecent->GetValue()) {
+    END_EXCEPTION_TRAPPER(TException::ReportException)
+
+    EndModal(XRCID("DLG_STARTUP_OPEN"));
+}
+
+void StartupDlg::OnRecent(wxCommandEvent &inEvent) {
+    Hide();
+
+    BEGIN_EXCEPTION_TRAPPER()
         // Get the selected directory name.
         int selected(mRecentList->GetSelection());
         wxString dir(mHistory.GetHistoryFile(selected));
@@ -82,10 +94,7 @@ void StartupDlg::OnOK(wxCommandEvent &inEvent) {
             // Open the program in dir.
             wxGetApp().GetStageFrame()->OpenDocument(dir);
         }
-    }
-
     END_EXCEPTION_TRAPPER(TException::ReportException)
-    
-    EndModal(wxID_OK);
-}
 
+    EndModal(XRCID("DLG_STARTUP_RECENT"));
+}
