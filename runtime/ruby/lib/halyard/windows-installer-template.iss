@@ -7,10 +7,18 @@
 #define CD_INSTALLER 0
 #endif
 
+;; Set this to 0 to exclude engine PDBs for the release build
+#ifndef INCLUDE_PDBS
+#define INCLUDE_PDBS 1
+#endif
+
 [Files]
 ;; Halyard runtime files.  We use a pretty complicated exclusion pattern
 ;; and then add some stuff back in manually.
-Source: engine\win32\*; DestDir: {app}\engine\win32; Excludes: .git*,.svn,*.bak,.#*,#*,*~,compiled,*.ilk,*.map,CommonTest*,qtcheck.dll,*_d.*,UpdateInstaller.exe; Flags: recursesubdirs; Components: base
+Source: engine\win32\*; DestDir: {app}\engine\win32; Excludes: *.pdb,.git*,.svn,*.bak,.#*,#*,*~,compiled,*.ilk,*.map,CommonTest*,qtcheck.dll,*_d.*,UpdateInstaller.exe; Flags: recursesubdirs; Components: base
+#if INCLUDE_PDBS
+Source: engine\win32\Halyard.pdb; DestDir: {app}\engine\win32; Components: base
+#endif
 Source: engine\win32\*.zo; DestDir: {app}\engine\win32; Flags: recursesubdirs touch skipifsourcedoesntexist; Components: base
 Source: engine\win32\qtcheck.dll; Flags: dontcopy
 
