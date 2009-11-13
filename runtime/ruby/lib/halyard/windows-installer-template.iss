@@ -66,7 +66,10 @@ Source: local\*; DestDir: {app}\local; Excludes: .git*,.svn,*.bak,.#*,#*,*~,*.ps
 
 Source: scripts\*; DestDir: {app}\scripts; Excludes: .git*,.svn,*.bak,.#*,#*,*~,compiled; Flags: recursesubdirs; Components: base
 Source: scripts\*.zo; DestDir: {app}\scripts; Flags: recursesubdirs touch skipifsourcedoesntexist; Components: base
-Source: collects\*; DestDir: {app}\collects; Excludes: .git*,.svn,*.bak,.#*,#*,*~,compiled; Flags: recursesubdirs; Components: base
+;; Some of our libraries have some test media that is large, and we would like
+;; to avoid shipping with updates.  The excludes for _halyard\{local,streaming}\
+;; media\tests prevent these from being included.
+Source: collects\*; DestDir: {app}\collects; Excludes: .git*,.svn,*.bak,.#*,#*,*~,compiled,_halyard\local\media\tests,_halyard\streaming\media\tests; Flags: recursesubdirs; Components: base
 Source: collects\*.zo; DestDir: {app}\collects; Flags: recursesubdirs touch skipifsourcedoesntexist; Components: base
 
 ;; All media except *.mp3 and *.mov files must be built into the
