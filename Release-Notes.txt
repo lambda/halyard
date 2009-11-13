@@ -1,3 +1,18 @@
+0.6.1 - 13 Nov 2009
+
+This release includes a few tweaks to the installer configuration, and to
+our logging system, in order to help get our programs in shape to be
+released.
+
+Brian Campbell (3):
+      Installer: Exclude all .pdb files, except Halyard.pdb by default
+      Exclude test media directories from installer and updater
+      Merge branch 'master' of git://github.com/emk/halyard
+
+Eric Kidd (2):
+      HACP: Log contents of HACP PutParam in Trace.log
+      log: Allow log4cplus.properties to be overridden by a project
+
 0.6.0 - 9 Nov 2009
 
 These release notes only cover the difference between 0.5.43 and 0.6.0, and
