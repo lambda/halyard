@@ -1,3 +1,19 @@
+0.6.2 - 16 Nov 2009
+
+This release includes a few tweaks to buildscript's Inno Setup support;
+a bugfix, and the removal of a limitation of one destination for each
+source file.
+
+Brian Campbell (1):
+      Buildscript: Inno Setup fixes
+
+Buildscript changes:
+
+Brian Campbell (3):
+      Bugfix: Compare Inno Setup exclude globs against all components of path
+      Refactor and comment FileSet.apply_exclusions based on code review
+      inno_setup.rb: Allow the same file to be installed to multiple locations
+
 0.6.1 - 13 Nov 2009
 
 This release includes a few tweaks to the installer configuration, and to
