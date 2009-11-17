@@ -139,7 +139,7 @@ UninstallDisplayIcon={app}\local\branding\application.ico
 ;; Henderson has asked use to use the /passive flag.  See bug #3581 for the
 ;; details of the decision and our licensing discussion with Apple.
 Filename: {tmp}\QuickTimeInstaller.exe; Parameters: /passive; Components: quicktime; StatusMsg: Installing QuickTime...
-Filename: {app}\engine\win32\Halyard.exe; Parameters: """{app}"""; WorkingDir: {app}; Description: Launch {cm:AppShortName}; Flags: postinstall
+Filename: {app}\engine\win32\Halyard.exe; Parameters: """{app}"""; WorkingDir: {app}; Description: Launch {cm:AppShortName}; Flags: postinstall nowait
 [Icons]
 Name: {group}\{cm:AppShortName}; Filename: {app}\engine\win32\Halyard.exe; IconIndex: 0; Flags: createonlyiffileexists; Parameters: """."""; WorkingDir: {app}; IconFilename: {app}\local\branding\application.ico
 Name: {group}\Halyard License; Filename: {app}\engine\win32\LICENSE.txt; Flags: createonlyiffileexists
