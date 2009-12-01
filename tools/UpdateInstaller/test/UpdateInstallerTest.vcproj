@@ -193,6 +193,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\InstallTool.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\src\LogFile.cpp"
 				>
 			</File>
@@ -202,6 +206,10 @@
 			</File>
 			<File
 				RelativePath="test.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\src\Uninstaller.cpp"
 				>
 			</File>
 			<File

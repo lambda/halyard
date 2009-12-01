@@ -23,8 +23,6 @@
 #include <string>
 #include <vector>
 #include <cassert>
-#include <windows.h>
-#include <sys/utime.h>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/convenience.hpp>
@@ -40,23 +38,17 @@
 
 using namespace boost::filesystem;
 
-static const char LOCK_NAME[] = "UPDATE.LCK";
-static bool IsWriteable(const path &name);
-static void CopyFileWithRetries(const path &source, const path &dest, 
-                                bool move);
-static void TouchFile(const path &name);
-
 
 //=========================================================================
 //  UpdateInstaller setup
 //=========================================================================
 
 UpdateInstaller::UpdateInstaller(const path &src_root, const path &dst_root)
-    : mSrcRoot(src_root), mDestRoot(dst_root), 
+    : InstallTool(dst_root),
+      mSrcRoot(src_root),
       mSpecFile(mSrcRoot / "Updates/release.spec"),
       mSrcManifestDir(mSrcRoot / "Updates/manifests" / mSpecFile.build()),
       mUpdateFiles(FileSet::FromManifestsInDir(mSrcManifestDir)),
-      mExistingFiles(FileSet::FromManifestsInDir(mDestRoot)),
       mFilesNeededForNewTree(mUpdateFiles.MinusExactMatches(mExistingFiles)),
       mUpdateIsPossible(true)
 {
@@ -410,15 +402,6 @@ void UpdateInstaller::InstallUpdate() {
     UnlockDestinationDirectory();
 }
 
-/// This function is called at uninstallation time to clean up any leftover
-/// lock files.  Without this, a failed update would make it effectively
-/// impossible for ordinary users to uninstall and reinstall the program.
-void UpdateInstaller::DeleteLockFileForUninstall(const path &root) {
-    path lock(root / LOCK_NAME);
-    if (exists(lock))
-        remove(lock);
-}
-
 /// Lock our destination directory.  This function actually contains a race
 /// condition, because we don't make use of automatic create/open
 /// operations.  But in practice, this is a sufficient level of robustness
@@ -480,103 +463,4 @@ path UpdateInstaller::PathRelativeToTree(const path &p) {
         relative_path /= *relative_iter;
     
     return relative_path;
-}
-
-//=========================================================================
-//  FileOperation subclasses
-//=========================================================================
-
-bool FileDelete::IsPossible() const {
-    return IsWriteable(file);
-}
-
-void FileDelete::Perform() const {
-    if (exists(file))
-        remove(file);
-}
-
-bool FileTransfer::IsPossible() const {
-    // Bug #1107: We've been having trouble with mysterious locks on our
-    // source files, on at least one machine.  In an effort to avoid this,
-    // we're experimentally adding a "IsWriteable(source)" to this
-    // condition, in hopes of detecting any such locks early enough to
-    // abort.
-    return (!mShouldExist || exists(mSource)) && 
-        IsWriteable(mSource) && IsWriteable(mDest);
-}
-
-void FileTransfer::Perform() const {
-    create_directories(mDest.branch_path());
-    if (exists(mDest))
-        remove(mDest);
-    CopyFileWithRetries(mSource, mDest, mMove);
-    TouchFile(mDest);
-}
-
-bool CaseRename::IsPossible() const {
-    return (exists(mSource) && exists(mDest));
-}
-
-void CaseRename::Perform() const {
-    CopyFileWithRetries(mSource, mDest, true);
-    TouchFile(mDest);
-}
-
-
-//=========================================================================
-//  File system helper functions
-//=========================================================================
-
-bool IsWriteable(const path &name) {
-    if (exists(name) && !is_directory(name)) {
-        // If we can't open the file, keep trying every 1/5th of a second
-        // for 10 seconds.
-        for (int i = 0; i < 50; i++) {
-            FILE *file = fopen(name.native_file_string().c_str(), "a");
-            if (file != NULL) {
-                fclose(file);
-                return true;
-            }
-            Sleep(200);
-        }
-        return false;
-    }
-
-    return true;
-}
-
-/// Copy or move a file, retrying several times if the operation fails
-void CopyFileWithRetries(const path &source, const path &dest, bool move) {
-    // Bug #1107: We've been having trouble with mysterious locks on our
-    // source files, on at least one machine.  In an effort to avoid this,
-    // we try to copy files to their final destination repeatedly before
-    // giving up.
-    //
-    // Since a failed copy_file will leave the program in an unusable and
-    // corrupted state, we try several times before giving up, just in case
-    // any failures are transient.  Note that we use a 1-based loop here
-    // for clarity in the 'catch' statement.
-    size_t max_retries = 5;
-    bool succeeded = false;
-    for (size_t i = 1; !succeeded && i <= max_retries; ++i) {
-        try {
-            if (move) {
-                rename(source, dest);
-            } else {
-                copy_file(source, dest);
-            }
-            succeeded = true;
-        } catch (filesystem_error &) {
-            // If we've exhausted our last retry, then rethrow this error.
-            // Otherwise, sleep and try again.
-            if (i == max_retries)
-                throw;
-            else
-                Sleep(500);
-        }
-    }
-}
-
-void TouchFile(const path &name) {
-    utime(name.native_file_string().c_str(), NULL);
 }

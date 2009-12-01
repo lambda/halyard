@@ -285,6 +285,18 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\src\InstallTool.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath=".\src\LogFile.cpp"
 				>
 				<FileConfiguration
@@ -345,6 +357,18 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\src\Uninstaller.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath=".\src\UpdateInstaller.cpp"
 				>
 				<FileConfiguration
@@ -377,6 +401,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\src\InstallTool.h"
+				>
+			</File>
+			<File
 				RelativePath=".\src\Interface.h"
 				>
 			</File>
@@ -386,6 +414,10 @@
 			</File>
 			<File
 				RelativePath=".\src\SpecFile.h"
+				>
+			</File>
+			<File
+				RelativePath=".\src\Uninstaller.h"
 				>
 			</File>
 			<File

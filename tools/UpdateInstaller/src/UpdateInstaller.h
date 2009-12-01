@@ -27,69 +27,9 @@
 #include <boost/shared_ptr.hpp>
 #include "FileSet.h"
 #include "SpecFile.h"
+#include "InstallTool.h"
 
-using namespace boost::filesystem;
-
-class FileOperation {
-public:
-    virtual bool IsPossible() const = 0;
-    virtual void Perform() const = 0;
-
-    typedef boost::shared_ptr<FileOperation> Ptr;
-    typedef std::vector<Ptr> Vector;
-};
-
-class FileDelete : public FileOperation {
-public:
-    FileDelete(path inFile) : file(inFile) { }
-    virtual bool IsPossible() const;
-    virtual void Perform() const;
-
-protected:
-    path file;
-};
-
-// Represents a copy or a move from the source to the dest, depending
-// on the inMove flag passed in to the constructor.  inShouldExist
-// indicates whether the file is expected to exist at the source location
-// before we begin our update.
-class FileTransfer : public FileOperation {
-public:
-    FileTransfer(const path &inSource, const path &inDest, 
-                 bool inMove = false, bool inShouldExist = true) 
-        : mSource(inSource), mDest(inDest), mMove(inMove),
-          mShouldExist(inShouldExist) { }
-    virtual bool IsPossible() const;
-    virtual void Perform() const;
-
-protected:
-    path mSource, mDest;
-
-    // Should we do this as a move?  Default is to copy.
-    bool mMove;
-
-    // True if we expect the source file to exist when checking if the
-    // update is possible.  This will be false when we are depending on
-    // a prior transfer to put the source file into place.
-    bool mShouldExist;
-};
-
-// Represents a rename "in-place"; that is, a renaming of a file
-// name to the same name in different case.  This differs from
-// FileTransfer above, which deletes any file at the destination
-// before running, which we can't do for what should be obvious
-// reasons.
-class CaseRename : public FileOperation {
-public: 
-    CaseRename(const path &inSource, const path &inDest) 
-        : mSource(inSource), mDest(inDest) { }
-    virtual bool IsPossible() const;
-    virtual void Perform() const;
-protected:
-    path mSource, mDest;
-};
-
-class UpdateInstaller {
+class UpdateInstaller : public InstallTool {
 public:
     UpdateInstaller(const path &src_root, const path &dst_root);
     
@@ -97,13 +37,11 @@ public:
     bool IsUpdatePossible();
     void InstallUpdate();
 
-    static void DeleteLockFileForUninstall(const path &root);
-
-private:
-    // These are the inputs we get when we are launched, representing
-    // the directory containing our update, and the directory our program
-    // is installed in.
-    path mSrcRoot, mDestRoot;
+protected:
+    // This is one of the inputs we get when we are launched, representing
+    // the directory containing our update.  The directory the existing
+    // program is installed in is defined in our superclass.
+    path mSrcRoot;
 
     // This is the parsed contents of the spec file for the new version
     // of the program (the update, read out of mSrcRoot).
@@ -113,10 +51,11 @@ private:
     // manifessts from.  Our old manifests should just be in mDestRoot.
     path mSrcManifestDir;
 
-    // These are the unions of the manifests in our new (update) and old
-    // (base) manifests.  These are the inputs to our algorithm that
-    // determines all of the copies and moves we will need to do.
-    FileSet mUpdateFiles, mExistingFiles;
+    // This is the union of the manifests in our new (update)
+    // manifest.  This, and the set of base files from our superclass,
+    // are the inputs to our algorithm that determines all of the
+    // copies and moves we will need to do.
+    FileSet mUpdateFiles;
 
     // This is the set of files that we need to add to our new tree.
     // Some of them may be in the pool, while some may be in the tree
@@ -182,4 +121,4 @@ private:
     path PathRelativeToTree(const path &p);
 };
 
-#endif // UpdateInstaler_H
+#endif // UpdateInstaller_H

@@ -27,6 +27,7 @@
 
 #include "CommandLine.h"
 #include "UpdateInstaller.h"
+#include "Uninstaller.h"
 #include "LogFile.h"
 #include "Interface.h"
 
@@ -83,7 +84,7 @@ void UpdaterMain(size_t argc, const char **argv) {
             // creating them, and we don't know what directory we should be
             // logging to.
             //LogFile logger(root / "Updates" / "temp" / "log");
-            UpdateInstaller::DeleteLockFileForUninstall(root);
+            Uninstaller::DeleteLockFileForUninstall(root);
             //logger.Log("Uninstall completed.");
             exit(0);
         }
