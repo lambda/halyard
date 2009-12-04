@@ -98,6 +98,10 @@ class InstallTool {
 public:
     InstallTool(const path &dst_root);
 
+    virtual void Prepare() = 0;
+    virtual bool IsPossible();
+    virtual void Run();
+
 protected:
     // This is the directory our program is installed in.
     path mDestRoot;
@@ -106,9 +110,32 @@ protected:
     // program.
     FileSet mExistingFiles;
 
+    // Is this task possible, to the best of our current knowledge?
+    // This can be set to false at any time before we start running to
+    // indicate that something is screwy and we should abort before we
+    // screw up even further.
+    bool mIsPossible;
+
     // The name of the lock file indicating whether we have a half-
     // updated program.
     static const char *LOCK_NAME;
+
+    // All of the file operations we have to do, in the order we need
+    // to do them.  This contains the files we need to move from the
+    // tree to the pool, the files we need to copy from the tree to
+    // the pool, the files we need to delete from the tree, the files
+    // we need to copy or move from the pool back to the tree, and the
+    // extra files like the new manifests and the new "release.spec"
+    // that aren't included in the normal manifest lists.
+    FileOperation::Vector mOperations;
+
+    typedef boost::unordered_set<std::string> FilenameSet;
+    typedef boost::unordered_map<std::string,std::string> DirectoryNameMap;
+    typedef FileSet::LowercaseFilenameMap::value_type FilenameEntryPair;
+
+    // Mark our action as impossible, and log a reason.  This will
+    // cause IsPossible to reutrn false
+    void MarkImpossible(const std::string &reason);
 };
 
 #endif // InstallTool_H

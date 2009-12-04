@@ -33,9 +33,8 @@ class UpdateInstaller : public InstallTool {
 public:
     UpdateInstaller(const path &src_root, const path &dst_root);
     
-    void PrepareForUpdate();
-    bool IsUpdatePossible();
-    void InstallUpdate();
+    virtual void Prepare();
+    virtual void Run();
 
 protected:
     // This is one of the inputs we get when we are launched, representing
@@ -78,38 +77,17 @@ protected:
     // our tree; we do not need these files anywhere any more.
     FileSet mFilesToDeleteFromTree;
 
-    // All of the file operations we have to do, in the order we need
-    // to do them.  This contains the files we need to move from the
-    // tree to the pool, the files we need to copy from the tree to
-    // the pool, the files we need to delete from the tree, the files
-    // we need to copy or move from the pool back to the tree, and the
-    // extra files like the new manifests and the new "release.spec"
-    // that aren't included in the normal manifest lists.
-    FileOperation::Vector mOperations;
-
-    // Is the update possible, to the best of our current knowledge?
-    // This can be set to false at any time before we start updating to
-    // indicate that something is screwy and we should abort before we
-    // screw up even further.
-    bool mUpdateIsPossible;
-
-    typedef boost::unordered_set<std::string> FilenameSet;
-    typedef boost::unordered_map<std::string,std::string> DirectoryNameMap;
-    typedef FileSet::LowercaseFilenameMap::value_type FilenameEntryPair;
-
     void CalculateFileSetsForUpdates();
     void BuildFileOperationVector();
     void BuildTreeToPoolFileOperations();
     void BuildPoolToTreeFileOperations();
     void BuildUpdaterSpecialFileOperations();
     void BuildDirectoryCleanupFileOperations();
-    bool BuildCleanupRecursive(const FileSet::LowercaseFilenameMap &known_files,
-                               path dir, 
+    bool BuildCleanupRecursive(path dir, 
+                               const FileSet::LowercaseFilenameMap &known_files,
                                const DirectoryNameMap &directories_to_keep);
     void BuildCaseRenameFileOperations();
     DirectoryNameMap DirectoriesForFiles(const FilenameSet &files);
-
-    void MarkUpdateImpossible(const std::string &reason);
 
     void LockDestinationDirectory();
     void UnlockDestinationDirectory();

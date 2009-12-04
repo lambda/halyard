@@ -24,6 +24,7 @@
 #include <sys/utime.h>
 #include "InstallTool.h"
 #include "Interface.h"
+#include "LogFile.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/convenience.hpp>
@@ -35,10 +36,60 @@ static void CopyFileWithRetries(const path &source, const path &dest,
                                 bool move);
 static void TouchFile(const path &name);
 
+
+//=========================================================================
+//  Install Tool
+//=========================================================================
+
 InstallTool::InstallTool(const path &dst_root) 
   : mDestRoot(dst_root), 
-    mExistingFiles(FileSet::FromManifestsInDir(mDestRoot))
+    mExistingFiles(FileSet::FromManifestsInDir(mDestRoot)),
+    mIsPossible(true)
 {
+}
+
+void InstallTool::MarkImpossible(const std::string &reason) {
+    LogFile::GetLogFile()->Log("Update is impossible: " + reason + ".");
+    mIsPossible = false;
+}
+
+bool InstallTool::IsPossible() {
+    // Basic sanity check: Don't install to a target directory that lacks
+    // a release.spec.  This reduces the chance the updater could
+    // accidentally be used to mess up a user's system.
+    if (!exists(mDestRoot / "release.spec")) {
+        MarkImpossible("Cannot find release.spec");
+        return false;
+    }
+    
+    // If we ran across something weird earlier, bail.
+    if (!mIsPossible) {
+        return false;
+    }
+
+    // If one of our file operations appears to be impossible, because
+    // the necessary files don't exist or are not readable or writable,
+    // bail.
+    FileOperation::Vector::const_iterator operation = mOperations.begin();
+    for (; operation != mOperations.end(); ++operation) {
+        if (!(*operation)->IsPossible()) {
+            return false;
+        }
+    }
+
+    // Otherwise, we're golden.
+    return true;
+}
+
+void InstallTool::Run() {
+    size_t total = mOperations.size();
+    UpdateProgressRange(total);
+    FileOperation::Vector::const_iterator operation = mOperations.begin();
+    for (size_t i = 0; operation != mOperations.end(); ++operation, ++i) {
+        UpdateProgress(i);
+        (*operation)->Perform();
+    }
+    UpdateProgress(total);
 }
 
 

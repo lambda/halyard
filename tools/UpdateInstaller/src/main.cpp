@@ -73,51 +73,57 @@ void UpdaterMain(size_t argc, const char **argv) {
         printf("Usage: UpdateInstaller srcpath dstpath [command ...]\n");
         exit(1);
     } 
-
-    if (strcmp(argv[1], "--uninstall") == 0) {
-        if (argc < 3) {
-            printf("Usage: UpdateInstaller --uninstall path\n");
-            exit(1);
-        } else {
-            path root(argv[2], native);
-            // Disabled log file--we're supposed to be deleting things, not
-            // creating them, and we don't know what directory we should be
-            // logging to.
-            //LogFile logger(root / "Updates" / "temp" / "log");
-            Uninstaller::DeleteLockFileForUninstall(root);
-            //logger.Log("Uninstall completed.");
-            exit(0);
-        }
-    } 
     
-    LogFile::InitLogFile(path(argv[1], native) / "Updates" / "temp" / "log");
+    bool uninstall = (strcmp(argv[1], "--uninstall") == 0);
+    
+    if (uninstall) {
+        // FIXME - temporary hack so I can continue working until I
+        // figure out what to do with this log file.
+        LogFile::InitLogFile(path(argv[2], native) / "temp" / "log");
+    } else {
+        LogFile::InitLogFile(path(argv[1], native) / "Updates" / "temp" / 
+                             "log");
+    }
+
     LogFile *logger = LogFile::GetLogFile();
         
     try {
         logger->Log("Checking if install is possible.");
-        UpdateInstaller installer = UpdateInstaller(path(argv[1], native),
-                                                    path(argv[2], native));
+        InstallTool *tool;
 
-        installer.PrepareForUpdate();
-        if (!installer.IsUpdatePossible()) {
+        if (uninstall) {
+            path root(argv[2], native);
+            tool = new Uninstaller(root);
+        } else {
+            tool = new UpdateInstaller(path(argv[1], native),
+                                       path(argv[2], native));
+        }
+        
+        tool->Prepare();
+
+        if (!tool->IsPossible()) {
             // If we determine, safely, that updating is impossible, we should
             // just relaunch the program.
             // TODO - On Vista, this will show a dialog claiming the update
             // was successful.
-            logger->Log("Update is impossible; relaunching.");
-            LaunchProgram(false, argc, argv);
+            if (!uninstall) {
+                logger->Log("Update is impossible; relaunching.");
+                LaunchProgram(false, argc, argv);
+            }
             exit(1);
         }
 
         logger->Log("Install is possible; beginning install.");
-        installer.InstallUpdate();
+        tool->Run();
     } catch (std::exception &e) {
         logger->Log(format("Error: %s") % e.what(), LogFile::FATAL);
     } catch (...) {
         logger->Log("Unknown error.", LogFile::FATAL);
     }
 
-    logger->Log("Update installed successfully. Relaunching.");
-    LaunchProgram(true, argc, argv);
+    if (!uninstall) {
+        logger->Log("Update installed successfully. Relaunching.");
+        LaunchProgram(true, argc, argv);
+    }
 }
 

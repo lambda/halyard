@@ -25,13 +25,20 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/convenience.hpp>
 
+void Uninstaller::Prepare() {
+    // empty for now
+}
 
-/// This function is called at uninstallation time to clean up any leftover
-/// lock files.  Without this, a failed update would make it effectively
-/// impossible for ordinary users to uninstall and reinstall the program.
-void Uninstaller::DeleteLockFileForUninstall(const path &root) {
-    path lock(root / LOCK_NAME);
+void Uninstaller::Run() {
+    // Lock the directory? We would need to do so without failing if the 
+    // lock exists.
+
+    InstallTool::Run();
+
+    // Clean up any leftover lock files.  Without this, a failed
+    // update would make it effectively impossible for ordinary users
+    // to uninstall and reinstall the program.
+    path lock(mDestRoot / LOCK_NAME);
     if (exists(lock))
         remove(lock);
 }
-

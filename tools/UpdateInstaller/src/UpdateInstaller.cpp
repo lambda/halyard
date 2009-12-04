@@ -49,12 +49,11 @@ UpdateInstaller::UpdateInstaller(const path &src_root, const path &dst_root)
       mSpecFile(mSrcRoot / "Updates/release.spec"),
       mSrcManifestDir(mSrcRoot / "Updates/manifests" / mSpecFile.build()),
       mUpdateFiles(FileSet::FromManifestsInDir(mSrcManifestDir)),
-      mFilesNeededForNewTree(mUpdateFiles.MinusExactMatches(mExistingFiles)),
-      mUpdateIsPossible(true)
+      mFilesNeededForNewTree(mUpdateFiles.MinusExactMatches(mExistingFiles))
 {
 }
 
-void UpdateInstaller::PrepareForUpdate() {
+void UpdateInstaller::Prepare() {
     CalculateFileSetsForUpdates();
     BuildFileOperationVector();
 }
@@ -76,8 +75,8 @@ void UpdateInstaller::CalculateFileSetsForUpdates() {
             // Uh, oh! This doesn't appear to be in our tree or our pool.
             // Looks like something went wrong, and we can't update; flag
             // the update as impossible and return
-            MarkUpdateImpossible("Couldn't find file with digest " + 
-                                 *digest_iter + " in pool or tree");
+            MarkImpossible("Couldn't find file with digest " + 
+                           *digest_iter + " in pool or tree");
             return;
         }
 
@@ -218,14 +217,14 @@ void UpdateInstaller::BuildDirectoryCleanupFileOperations() {
     dirs.push_back(mDestRoot / "engine/win32/plt");
 
     BOOST_FOREACH(path dir, dirs) {
-        BuildCleanupRecursive(known_files, dir, directories_to_keep);
-        if (!mUpdateIsPossible) return;
+        BuildCleanupRecursive(dir, known_files, directories_to_keep);
+        if (!mIsPossible) return;
     }
 }
 
 bool UpdateInstaller::BuildCleanupRecursive
-    (const FileSet::LowercaseFilenameMap &known_files,
-     path dir, 
+    (path dir, 
+     const FileSet::LowercaseFilenameMap &known_files,
      const DirectoryNameMap &directories_to_keep)
 {
     if (!exists(dir)) return false;
@@ -241,7 +240,7 @@ bool UpdateInstaller::BuildCleanupRecursive
                        relative_path_string.begin(), ::tolower);
 
         if (is_directory(dir_iter->status())) {
-            if (BuildCleanupRecursive(known_files, full_path, 
+            if (BuildCleanupRecursive(full_path, known_files, 
                                       directories_to_keep))
                 contains_undeletable_files = true;
         } else if (known_files.count(relative_path_string) == 0) {
@@ -276,8 +275,8 @@ bool UpdateInstaller::BuildCleanupRecursive
         } else {
             // If we have undeletable files, and we're in a directory
             // that needs cleanup, then we won't be able to update.
-            MarkUpdateImpossible("Cannot delete " + dir.string() +
-                                 "; contains unexpected files");
+            MarkImpossible("Cannot delete " + dir.string() +
+                           "; contains unexpected files");
         }
     }
 
@@ -346,59 +345,12 @@ bool UpdateInstaller::FileShouldBeInPool(const FileSet::Entry &e) {
 
 
 //=========================================================================
-//  UpdateInstaller sanity check
-//=========================================================================
-
-void UpdateInstaller::MarkUpdateImpossible(const std::string &reason) {
-    LogFile::GetLogFile()->Log("Update is impossible: " + reason + ".");
-    mUpdateIsPossible = false;
-}
-
-bool UpdateInstaller::IsUpdatePossible() {
-    // Basic sanity check: Don't install to a target directory that lacks
-    // a release.spec.  This reduces the chance the updater could
-    // accidentally be used to mess up a user's system.
-    if (!exists(mDestRoot / "release.spec")) {
-        MarkUpdateImpossible("Cannot find release.spec");
-        return false;
-    }
-    
-    // If we ran across something weird earlier, bail.
-    if (!mUpdateIsPossible) {
-        return false;
-    }
-
-    // If one of our file operations appears to be impossible, because
-    // the necessary files don't exist or are not readable or writable,
-    // bail.
-    FileOperation::Vector::const_iterator operation = mOperations.begin();
-    for (; operation != mOperations.end(); ++operation) {
-        if (!(*operation)->IsPossible()) {
-            return false;
-        }
-    }
-
-    // Otherwise, we're golden.
-    return true;
-}
-
-
-//=========================================================================
 //  UpdateInstaller installation
 //=========================================================================
 
-void UpdateInstaller::InstallUpdate() {
+void UpdateInstaller::Run() {
     LockDestinationDirectory();
-
-    size_t total = mOperations.size();
-    UpdateProgressRange(total);
-    FileOperation::Vector::const_iterator operation = mOperations.begin();
-    for (size_t i = 0; operation != mOperations.end(); ++operation, ++i) {
-        UpdateProgress(i);
-        (*operation)->Perform();
-    }
-    UpdateProgress(total);
-
+    InstallTool::Run();
     UnlockDestinationDirectory();
 }
 

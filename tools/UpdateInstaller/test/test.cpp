@@ -134,14 +134,14 @@ BOOST_AUTO_TEST_CASE(test_windows_command_line_quoting) {
 BOOST_AUTO_TEST_CASE(test_is_update_possible) {
     UpdateInstaller installer = UpdateInstaller(path("."), path("."));
     
-    installer.PrepareForUpdate();
-    BOOST_REQUIRE(installer.IsUpdatePossible());    
+    installer.Prepare();
+    BOOST_REQUIRE(installer.IsPossible());    
 
     rename(path("Updates/pool") / foo_digest,
            path("Updates/pool/temp"));
-    BOOST_CHECK(!installer.IsUpdatePossible());
+    BOOST_CHECK(!installer.IsPossible());
     
     rename(path("Updates/pool/temp"),
            path("Updates/pool") / foo_digest);
-    BOOST_CHECK(installer.IsUpdatePossible());
+    BOOST_CHECK(installer.IsPossible());
 }

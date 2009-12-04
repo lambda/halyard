@@ -27,7 +27,10 @@
 
 class Uninstaller : public InstallTool {
 public:
-    static void DeleteLockFileForUninstall(const path &root);
+    Uninstaller(const path &dst_root) : InstallTool(dst_root) { }
+
+    virtual void Prepare();
+    virtual void Run();
 };
 
 #endif // Uninstaller_H
