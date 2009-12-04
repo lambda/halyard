@@ -136,6 +136,14 @@ protected:
     // Mark our action as impossible, and log a reason.  This will
     // cause IsPossible to reutrn false
     void MarkImpossible(const std::string &reason);
+
+    DirectoryNameMap DirectoriesForFiles(const FilenameSet &files);
+    bool BuildCleanupRecursive(path dir, 
+                               const FileSet::LowercaseFilenameMap &known_files,
+                               const DirectoryNameMap &directories_to_keep);
+
+    path PathInTree(const FileSet::Entry &e);
+    path PathRelativeToTree(const path &p);
 };
 
 #endif // InstallTool_H

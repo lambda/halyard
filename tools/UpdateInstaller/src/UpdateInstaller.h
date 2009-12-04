@@ -83,20 +83,14 @@ protected:
     void BuildPoolToTreeFileOperations();
     void BuildUpdaterSpecialFileOperations();
     void BuildDirectoryCleanupFileOperations();
-    bool BuildCleanupRecursive(path dir, 
-                               const FileSet::LowercaseFilenameMap &known_files,
-                               const DirectoryNameMap &directories_to_keep);
     void BuildCaseRenameFileOperations();
-    DirectoryNameMap DirectoriesForFiles(const FilenameSet &files);
 
     void LockDestinationDirectory();
     void UnlockDestinationDirectory();
 
     bool FileShouldBeInPool(const FileSet::Entry &e);
-    path PathInTree(const FileSet::Entry &e);
     path PathInPool(const FileSet::Entry &e);
     path PathInPool(const std::string &s);
-    path PathRelativeToTree(const path &p);
 };
 
 #endif // UpdateInstaller_H

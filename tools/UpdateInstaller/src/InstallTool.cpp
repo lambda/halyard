@@ -22,6 +22,7 @@
 
 #include <windows.h>
 #include <sys/utime.h>
+#include <boost/foreach.hpp>
 #include "InstallTool.h"
 #include "Interface.h"
 #include "LogFile.h"
@@ -38,7 +39,7 @@ static void TouchFile(const path &name);
 
 
 //=========================================================================
-//  Install Tool
+//  Install Tool interface
 //=========================================================================
 
 InstallTool::InstallTool(const path &dst_root) 
@@ -90,6 +91,117 @@ void InstallTool::Run() {
         (*operation)->Perform();
     }
     UpdateProgress(total);
+}
+
+
+//=========================================================================
+//  Install Tool internals
+//=========================================================================
+
+bool InstallTool::BuildCleanupRecursive
+    (path dir, 
+     const FileSet::LowercaseFilenameMap &known_files,
+     const DirectoryNameMap &directories_to_keep)
+{
+    if (!exists(dir)) return false;
+
+    bool contains_undeletable_files = false;
+
+    directory_iterator dir_iter(dir);
+    for (; dir_iter != directory_iterator(); ++dir_iter) {
+        path full_path(dir_iter->path());
+        path relative_path(PathRelativeToTree(full_path));
+        std::string relative_path_string(relative_path.string());
+        std::transform(relative_path_string.begin(), relative_path_string.end(),
+                       relative_path_string.begin(), ::tolower);
+
+        if (is_directory(dir_iter->status())) {
+            if (BuildCleanupRecursive(full_path, known_files, 
+                                      directories_to_keep))
+                contains_undeletable_files = true;
+        } else if (known_files.count(relative_path_string) == 0) {
+            // This is not in our set of known files, so delete it if
+            // it has one of our own file types (as it's assumed to be
+            // junk left over from a previous update), or error
+            // out if it is not (since in that case we assume that it's
+            // some file that the user put there, and may be important
+            // to them).
+            std::string ext(relative_path.extension());
+            if (ext == ".zo" || ext == ".ss" || ext == ".dep") {
+                FileOperation::Ptr operation(new FileDelete(full_path));
+                mOperations.push_back(operation);
+            } else {
+                LogFile::GetLogFile()->Log("Unexpected file: " +
+                                           full_path.string());
+                contains_undeletable_files = true;
+            }
+        }
+    }
+
+    path relative_dir(PathRelativeToTree(dir));
+    std::string relative_dir_string(relative_dir.string());
+    std::transform(relative_dir_string.begin(), relative_dir_string.end(),
+                   relative_dir_string.begin(), ::tolower);
+    if (directories_to_keep.count(relative_dir_string) == 0) {
+        // This directory should be deleted.  But we can only delete
+        // this directory if it contains no undeletable files.
+        if (!contains_undeletable_files) {
+            FileOperation::Ptr operation(new FileDelete(dir));
+            mOperations.push_back(operation);
+        } else {
+            // If we have undeletable files, and we're in a directory
+            // that needs cleanup, then we won't be able to update.
+            MarkImpossible("Cannot delete " + dir.string() +
+                           "; contains unexpected files");
+        }
+    }
+
+    return contains_undeletable_files;
+}
+
+InstallTool::DirectoryNameMap 
+InstallTool::DirectoriesForFiles(const FilenameSet &files) 
+{
+    // See comment in FileSet.h on named return value optimization.
+    DirectoryNameMap directories;
+    BOOST_FOREACH(std::string filename, files) {
+        path p(filename);
+        while (p.has_parent_path()) {
+            p = p.parent_path();
+            std::string str(p.string());
+            std::string lower(str);
+            std::transform(lower.begin(), lower.end(), lower.begin(), 
+                           ::tolower);
+            directories.insert(DirectoryNameMap::value_type(lower, str));
+        }
+    }
+    
+    return directories;
+}
+
+
+//=========================================================================
+//  Install Tool utilities
+//=========================================================================
+
+/// The full path to where a file should be located in the tree.
+path InstallTool::PathInTree(const FileSet::Entry &e) { 
+    return mDestRoot / e.path();
+}
+
+/// Convert an abosolute path into a path relative to the program install
+/// directory.
+path InstallTool::PathRelativeToTree(const path &p) {
+    path::iterator root_iter(mDestRoot.begin());
+    path::iterator relative_iter(p.begin());
+
+    while (++root_iter != mDestRoot.end())
+        ++relative_iter;
+    path relative_path;
+    while (++relative_iter != p.end())
+        relative_path /= *relative_iter;
+    
+    return relative_path;
 }
 
 
