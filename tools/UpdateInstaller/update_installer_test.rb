@@ -44,8 +44,12 @@ class UpdateInstallerTest < Test::Unit::TestCase
   def setup
     @olddir = Dir.getwd
     FileUtils.rm_rf "fixture-temp"
-    FileUtils.cp_r self.class.fixture_dir, "fixture-temp"
+    prepare_tempdir "fixture-temp"
     FileUtils.cd "fixture-temp"
+  end
+
+  def prepare_tempdir name
+    raise "prepare_tempdir not implemented"
   end
 
   def teardown
@@ -91,7 +95,9 @@ class UpdateInstallerTest < Test::Unit::TestCase
 end
 
 class UpdateInstallerSimpleTest < UpdateInstallerTest
-  @fixture_dir = "fixture"
+  def prepare_tempdir name
+    FileUtils.cp_r "fixture", name
+  end
 
   def test_exe_exists
     assert_exists exe_path
@@ -293,12 +299,13 @@ class UpdateInstallerSmarterUpdateTest < UpdateInstallerTest
   OVERWRITTEN_TEXT = "Here are the new contents of this file"
   MULTIPLE_LOCATIONS_TEXT = "This file should be installed in multiple locations"
 
-  # Override the superclass that uses an existing fixture dir, and
-  # simply generate the fixture dir that we need.
   def setup
-    @olddir = Dir.getwd
-    FileUtils.rm_rf "fixture-temp"
-    UpdaterFixtureBuilder.new.dir "fixture-temp" do |fb|
+    super
+    run_exe "download-dir", "installed-program"
+  end
+
+  def prepare_tempdir name
+    UpdaterFixtureBuilder.new.dir name do |fb|
       fb.create_build("installed-program", "build-A", 
                       :component => %w[copied deleted 
                                        moved overwritten]) do |fb|
@@ -325,9 +332,6 @@ class UpdateInstallerSmarterUpdateTest < UpdateInstallerTest
         fb.pool_file MULTIPLE_LOCATIONS_TEXT
       end
     end
-    FileUtils.cd "fixture-temp"
-
-    run_exe "download-dir", "installed-program"
   end
 
   def test_copy_files_from_tree
@@ -358,10 +362,8 @@ class UpdateInstallerSmarterUpdateTest < UpdateInstallerTest
 end
 
 class UpdateInstallerCleanupTest < UpdateInstallerTest
-  def setup
-    @olddir = Dir.getwd
-    FileUtils.rm_rf "fixture-temp"
-    UpdaterFixtureBuilder.new.dir "fixture-temp" do |fb|
+  def prepare_tempdir name
+    UpdaterFixtureBuilder.new.dir name do |fb|
       fb.create_build("installed-program", "build-A",
                       :component => %w[Scripts/constant Scripts/changed
                                        Scripts/Capitalized/file
@@ -418,8 +420,6 @@ class UpdateInstallerCleanupTest < UpdateInstallerTest
         fb.pool_file "this file should be new, the dir downcased"
       end
     end
-
-    FileUtils.cd "fixture-temp"
   end
 
   def test_cleanup_extra_files
