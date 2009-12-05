@@ -24,9 +24,32 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/convenience.hpp>
+#include "FileSet.h"
 
 void Uninstaller::Prepare() {
-    // empty for now
+    // We're uninstalling, so keep the files that we're currently
+    // using (manifests and release.spec).
+    SpecFile spec(mDestRoot / "release.spec");
+    LowercaseFilenameMap 
+        files_to_keep(CreateLowercaseFilenameMap(spec.manifest()));
+    InsertIntoLowercaseFilenameMap(files_to_keep, "release.spec");
+
+    // Delete everything in our existing manifest.
+    LowercaseFilenameMap 
+        files_to_delete(CreateLowercaseFilenameMap(mExistingFiles));
+    
+    LowercaseFilenameMap directories_to_keep;
+    // We don't need to delete the temp directory, which is currently being
+    // used to hold the log file for this uninstall.
+    InsertIntoLowercaseFilenameMap(directories_to_keep, "temp");
+    // We don't need to delete the top-level directory; InnoSetup should do
+    // that for us if we delete all of the files it doesn't know about, and
+    // the top-level directory will contain some InnoSetup files that we
+    // can't delete anyhow.
+    InsertIntoLowercaseFilenameMap(directories_to_keep, "");
+
+    BuildCleanupRecursive(mDestRoot, files_to_delete, files_to_keep,
+                          directories_to_keep);
 }
 
 void Uninstaller::Run() {

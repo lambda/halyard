@@ -185,10 +185,12 @@ void UpdateInstaller::BuildDirectoryCleanupFileOperations() {
     // Don't touch any files that we know about, in the existing files or
     // update files lists.  Those files will be dealt with by other portions
     // of the updater.
-    FileSet::LowercaseFilenameMap 
-        known_files(mExistingFiles.LowercaseFilenameEntryMap());
-    known_files.insert(mUpdateFiles.LowercaseFilenameEntryMap().begin(), 
-                       mUpdateFiles.LowercaseFilenameEntryMap().end());
+    LowercaseFilenameMap known_files(CreateLowercaseFilenameMap(mExistingFiles));
+    LowercaseFilenameMap update_files(CreateLowercaseFilenameMap(mUpdateFiles));
+    known_files.insert(update_files.begin(), update_files.end());
+
+    // We don't have any files we explicitly wish to delete.
+    LowercaseFilenameMap files_to_delete;
 
     // The set of directories that we should have after we finish updating.
     // We should delete any extra directories that aren't in this set that
@@ -201,13 +203,8 @@ void UpdateInstaller::BuildDirectoryCleanupFileOperations() {
     // downcase the paths on disk that we pass in to compare, because
     // this set contains names only from the update manifest, which may
     // differ in case from the files on disk.
-    FilenameSet files;
-    BOOST_FOREACH(FilenameEntryPair file, 
-                  mUpdateFiles.LowercaseFilenameEntryMap()) {
-        files.insert(file.first);
-    }
-
-    DirectoryNameMap directories_to_keep(DirectoriesForFiles(files));
+    LowercaseFilenameMap directories_to_keep = 
+        DirectoriesForFiles(mUpdateFiles);
 
     // The directories that we would like to clean up.
     std::vector<path> dirs;
@@ -217,27 +214,21 @@ void UpdateInstaller::BuildDirectoryCleanupFileOperations() {
     dirs.push_back(mDestRoot / "engine/win32/plt");
 
     BOOST_FOREACH(path dir, dirs) {
-        BuildCleanupRecursive(dir, known_files, directories_to_keep);
+        BuildCleanupRecursive(dir, files_to_delete, 
+                              known_files, directories_to_keep);
         if (!mIsPossible) return;
     }
 }
 
 void UpdateInstaller::BuildCaseRenameFileOperations() {
-    FilenameSet existing_files, update_files;
-    BOOST_FOREACH(FileSet::Entry file, mExistingFiles.Entries()) {
-        existing_files.insert(file.path());
-    }
-    BOOST_FOREACH(FileSet::Entry file, mUpdateFiles.Entries()) {
-        update_files.insert(file.path());
-    }
     // Calculate maps from lowercase filenames to filenames with case,
     // for both the update and existing directories.
-    DirectoryNameMap existing_dirs(DirectoriesForFiles(existing_files));
-    DirectoryNameMap update_dirs(DirectoriesForFiles(update_files));
+    LowercaseFilenameMap existing_dirs(DirectoriesForFiles(mExistingFiles));
+    LowercaseFilenameMap update_dirs(DirectoriesForFiles(mUpdateFiles));
 
     // For every directory we expect to have after the update
-    BOOST_FOREACH(DirectoryNameMap::value_type update_dir, update_dirs) {
-        DirectoryNameMap::const_iterator existing_dir_iter;
+    BOOST_FOREACH(LowercaseFilenameMap::value_type update_dir, update_dirs) {
+        LowercaseFilenameMap::const_iterator existing_dir_iter;
         existing_dir_iter = existing_dirs.find(update_dir.first);
         // If we don't have a directory on disk that matches case insensitively,
         // we're all set.

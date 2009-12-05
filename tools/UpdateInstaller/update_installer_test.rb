@@ -79,7 +79,11 @@ class UpdateInstallerTest < Test::Unit::TestCase
   def assert_run_exe *args
     status = run_exe *args
     unless status
-      logfile = Pathname.new(args[0]) + "Updates/temp/log"
+      if args[0] == "--uninstall"
+        logfile = Pathname.new(args[1]) + "temp/log"
+      else
+        logfile = Pathname.new(args[0]) + "Updates/temp/log"
+      end
       puts(logfile.read)
       flunk "Updating failed!"
     end
@@ -494,5 +498,50 @@ class UpdateInstallerCleanupTest < UpdateInstallerTest
                   "installed-program/dir/upper-2"], 
                  Dir["installed-program/dir/*"])
     
+  end
+end
+
+class UninstallCleanupTest < UpdateInstallerTest
+  def prepare_tempdir name
+    UpdaterFixtureBuilder.new.dir name do |fb|
+      fb.create_build("installed-program", "build-A",
+                      :component => %w[scripts/file.ss scripts/file.zo
+                                       scripts/other-extension.txt
+                                       engine/win32/dir/MANIFEST.base
+                                       top-level-file.txt
+                                       graphics/foo.png]) do |fb|
+        fb.dir "scripts" do |fb|
+          fb.file "file.ss", "contents"
+          fb.file "file.zo", "more contents"
+          fb.file "extra-file.ss", "blah"
+          fb.file "extra-file.dep", "stuff"
+          fb.file "other-extension.txt", "some contents"
+        end
+        fb.file "engine/win32/dir/MANIFEST.base", "stuff"
+        fb.file "collects/untracked-dir/MANIFEST.base", "something"
+        fb.file "top-level-file.txt", "more stuff"
+        fb.file "untracked-top-level-file.txt", "things"
+        fb.file "graphics/foo.png", "another file"
+        fb.file "UPDATE.LCK", ""
+        fb.dir "empty-dir"
+      end
+    end
+  end
+
+  def test_uninstall_successfull
+    assert_run_exe("--uninstall", "installed-program")
+    assert_equal(["installed-program/MANIFEST.component",
+                  "installed-program/release.spec",
+                  # TODO - we really shouldn't have this temp directory, it
+                  # is only present as a place to stick log output when
+                  # uninstalling
+                  "installed-program/temp", 
+                  "installed-program/untracked-top-level-file.txt"],
+                 Dir["installed-program/*"])
+  end
+
+  def test_uninstall_fails
+    File.open("installed-program/collects/untracked-dir/important.doc", 'w') {|f|}
+    assert !run_exe("--uninstall", "installed-program")
   end
 end

@@ -129,18 +129,25 @@ protected:
     // that aren't included in the normal manifest lists.
     FileOperation::Vector mOperations;
 
-    typedef boost::unordered_set<std::string> FilenameSet;
-    typedef boost::unordered_map<std::string,std::string> DirectoryNameMap;
-    typedef FileSet::LowercaseFilenameMap::value_type FilenameEntryPair;
+    // Some utilities for dealing with maps from lowercase filenames to
+    // case-preserved filenames.
+    typedef boost::unordered_map<std::string,std::string> LowercaseFilenameMap;
+    typedef LowercaseFilenameMap::value_type LowercaseFilenamePair;
+    LowercaseFilenameMap DirectoriesForFiles(const FileSet &files);
+    LowercaseFilenameMap CreateLowercaseFilenameMap(const FileSet &files);
+    static void InsertIntoLowercaseFilenameMap(LowercaseFilenameMap &map,
+                                               const std::string &filename);
 
     // Mark our action as impossible, and log a reason.  This will
     // cause IsPossible to reutrn false
     void MarkImpossible(const std::string &reason);
 
-    DirectoryNameMap DirectoriesForFiles(const FilenameSet &files);
     bool BuildCleanupRecursive(path dir, 
-                               const FileSet::LowercaseFilenameMap &known_files,
-                               const DirectoryNameMap &directories_to_keep);
+                               const LowercaseFilenameMap &files_to_delete,
+                               const LowercaseFilenameMap &known_files,
+                               const LowercaseFilenameMap &directories_to_keep);
+
+    bool ShouldDeleteFileDuringCleanup(const path &file);
 
     path PathInTree(const FileSet::Entry &e);
     path PathRelativeToTree(const path &p);

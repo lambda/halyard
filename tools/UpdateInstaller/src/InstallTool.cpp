@@ -99,9 +99,10 @@ void InstallTool::Run() {
 //=========================================================================
 
 bool InstallTool::BuildCleanupRecursive
-    (path dir, 
-     const FileSet::LowercaseFilenameMap &known_files,
-     const DirectoryNameMap &directories_to_keep)
+    (path dir,
+     const LowercaseFilenameMap &files_to_delete,
+     const LowercaseFilenameMap &files_to_keep,
+     const LowercaseFilenameMap &directories_to_keep)
 {
     if (!exists(dir)) return false;
 
@@ -116,18 +117,20 @@ bool InstallTool::BuildCleanupRecursive
                        relative_path_string.begin(), ::tolower);
 
         if (is_directory(dir_iter->status())) {
-            if (BuildCleanupRecursive(full_path, known_files, 
-                                      directories_to_keep))
+            if (BuildCleanupRecursive(full_path, files_to_delete,
+                                      files_to_keep, directories_to_keep))
                 contains_undeletable_files = true;
-        } else if (known_files.count(relative_path_string) == 0) {
+        } else if (files_to_delete.count(relative_path_string) > 0) {
+            FileOperation::Ptr operation(new FileDelete(full_path));
+            mOperations.push_back(operation);            
+        } else if (files_to_keep.count(relative_path_string) == 0) {
             // This is not in our set of known files, so delete it if
             // it has one of our own file types (as it's assumed to be
             // junk left over from a previous update), or error
             // out if it is not (since in that case we assume that it's
             // some file that the user put there, and may be important
             // to them).
-            std::string ext(relative_path.extension());
-            if (ext == ".zo" || ext == ".ss" || ext == ".dep") {
+            if (ShouldDeleteFileDuringCleanup(relative_path)) {
                 FileOperation::Ptr operation(new FileDelete(full_path));
                 mOperations.push_back(operation);
             } else {
@@ -159,24 +162,61 @@ bool InstallTool::BuildCleanupRecursive
     return contains_undeletable_files;
 }
 
-InstallTool::DirectoryNameMap 
-InstallTool::DirectoriesForFiles(const FilenameSet &files) 
+bool InstallTool::ShouldDeleteFileDuringCleanup(const path &file) {
+    // In our installer builder, we had a bug where any file which matched
+    // the name of one of our manifests would be included in the install
+    // but not included in the manifest, leaving it as an extraneous file
+    // that wouldn't be deleted.  These files are only used in unit tests
+    // that are not visible to the end user, so we can just delete them.
+    // The only file that this actually affects is MANIFEST.base, so we
+    // look for a file named MANIFEST.base that is not at the root, and
+    // mark that for delete during cleanup.
+    if (file.filename() == "MANIFEST.base" && file.string() != "MANIFEST.base")
+        return true;
+
+    std::string ext(file.extension());
+    return (ext == ".zo" || ext == ".ss" || ext == ".dep");
+}
+
+InstallTool::LowercaseFilenameMap
+InstallTool::DirectoriesForFiles(const FileSet &files) 
 {
     // See comment in FileSet.h on named return value optimization.
-    DirectoryNameMap directories;
-    BOOST_FOREACH(std::string filename, files) {
+    LowercaseFilenameMap directories;
+    BOOST_FOREACH(FileSet::Entry entry, files.Entries()) {
+        std::string filename(entry.path());
         path p(filename);
         while (p.has_parent_path()) {
             p = p.parent_path();
-            std::string str(p.string());
-            std::string lower(str);
-            std::transform(lower.begin(), lower.end(), lower.begin(), 
-                           ::tolower);
-            directories.insert(DirectoryNameMap::value_type(lower, str));
+            InsertIntoLowercaseFilenameMap(directories, p.string());
         }
     }
     
     return directories;
+}
+
+InstallTool::LowercaseFilenameMap 
+InstallTool::CreateLowercaseFilenameMap(const FileSet &files) {
+    LowercaseFilenameMap map;
+    BOOST_FOREACH(FileSet::Entry entry, files.Entries()) {
+        InsertIntoLowercaseFilenameMap(map, entry.path());
+    }
+    
+    return map;
+}
+
+void InstallTool::InsertIntoLowercaseFilenameMap(LowercaseFilenameMap &map,
+                                                 const std::string &filename) {
+    // Add these paths normalized to lowercase, as we are going to need to
+    // compare them case insensitively against paths on the disk.
+    // XXX - this is inappropriate for anything outside of US-ASCII;
+    // tolower is only guaranteed to work within that range, and
+    // general purpose Unicode case folding is well out of scope
+    // of this program.  Don't put any characters outside of the US-ASCII
+    // range into your tree.
+    std::string lower(filename);
+    std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);    
+    map.insert(LowercaseFilenameMap::value_type(lower, filename));    
 }
 
 
