@@ -55,9 +55,10 @@ void ReportError(const char *message) {
 
 const char *foo_digest = "855426068ee8939df6bce2c2c4b1e7346532a133";
 const char *null_digest = "da39a3ee5e6b4b0d3255bfef95601890afd80709";
+const path updates_path("download-dir/Updates");
 
 BOOST_AUTO_TEST_CASE(test_parse_manifest) {
-    path base_path("Updates/manifests/update/MANIFEST.base");
+    path base_path(updates_path / "manifests/update/MANIFEST.base");
     FileSet base_manifest(FileSet::FromManifestFile(base_path));
     BOOST_CHECK(2 == base_manifest.Entries().size());
     CHECK_ENTRY(null_digest, 0, "bar.txt", base_manifest.Entries());
@@ -66,7 +67,7 @@ BOOST_AUTO_TEST_CASE(test_parse_manifest) {
     FileSet::Entry foo(foo_digest, 5, "foo.txt");
     BOOST_CHECK(base_manifest.HasMatchingEntry(foo));
 
-    path sub_path("Updates/manifests/update/MANIFEST.sub");
+    path sub_path(updates_path / "manifests/update/MANIFEST.sub");
     FileSet sub_manifest(FileSet::FromManifestFile(sub_path));
     BOOST_CHECK(3 == sub_manifest.Entries().size());
     CHECK_ENTRY(null_digest, 0, "sub/baz.txt", sub_manifest.Entries());
@@ -81,7 +82,7 @@ BOOST_AUTO_TEST_CASE(test_parse_manifest) {
 }
 
 BOOST_AUTO_TEST_CASE(test_all_manifests_in_dir) {
-    path update_manifest_dir("Updates/manifests/update/");
+    path update_manifest_dir(updates_path / "manifests/update/");
     FileSet full_manifest(FileSet::FromManifestsInDir(update_manifest_dir));
 
     BOOST_CHECK(5 == full_manifest.Entries().size());
@@ -98,8 +99,9 @@ BOOST_AUTO_TEST_CASE(test_all_manifests_in_dir) {
 }
 
 BOOST_AUTO_TEST_CASE(test_diff_manifests) {
-    FileSet base(FileSet::FromManifestsInDir("."));
-    FileSet update(FileSet::FromManifestsInDir("Updates/manifests/update"));
+    FileSet base(FileSet::FromManifestsInDir("installed-program"));
+    FileSet update(FileSet::FromManifestsInDir(updates_path / 
+                                               "manifests/update"));
     FileSet diff(update.MinusExactMatches(base));
 
     BOOST_CHECK(3 == diff.Entries().size());
@@ -109,7 +111,7 @@ BOOST_AUTO_TEST_CASE(test_diff_manifests) {
 }
 
 BOOST_AUTO_TEST_CASE(test_parse_spec) {
-    SpecFile spec(path("Updates/release.spec"));
+    SpecFile spec(path(updates_path / "release.spec"));
     BOOST_CHECK("http://www.example.com/updates/" == spec.url());
     BOOST_CHECK("update" == spec.build());
     BOOST_CHECK(2 == spec.manifest().Entries().size());
@@ -132,16 +134,17 @@ BOOST_AUTO_TEST_CASE(test_windows_command_line_quoting) {
 }
 
 BOOST_AUTO_TEST_CASE(test_is_update_possible) {
-    UpdateInstaller installer = UpdateInstaller(path("."), path("."));
+    UpdateInstaller installer = UpdateInstaller(path("download-dir"), 
+                                                path("installed-program"));
     
     installer.Prepare();
     BOOST_REQUIRE(installer.IsPossible());    
 
-    rename(path("Updates/pool") / foo_digest,
-           path("Updates/pool/temp"));
+    rename(path(updates_path / "pool") / foo_digest,
+           path(updates_path / "pool/temp"));
     BOOST_CHECK(!installer.IsPossible());
     
-    rename(path("Updates/pool/temp"),
-           path("Updates/pool") / foo_digest);
+    rename(path(updates_path / "pool/temp"),
+           path(updates_path / "pool") / foo_digest);
     BOOST_CHECK(installer.IsPossible());
 }

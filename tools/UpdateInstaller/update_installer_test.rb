@@ -109,51 +109,51 @@ class UpdateInstallerSimpleTest < UpdateInstallerTest
 
   def test_install
     download_mtime = 
-      File.mtime("Updates/pool/#{$foo_digest}")
+      File.mtime("download-dir/Updates/pool/#{$foo_digest}")
     sleep 2
-    assert run_exe(".", ".")
-    assert !File.exists?("UPDATE.LCK")
-    assert_exists "sub/quux.txt"
-    assert_file_equals "", "sub/quux.txt"
-    assert_file_equals "foo\r\n", "foo.txt"
-    assert_file_equals "foo\r\n", "sub/foo.txt"
-    assert_files_equal "Updates/release.spec", "release.spec"
-    assert_files_equal("Updates/manifests/update/MANIFEST.base", 
-                       "MANIFEST.base")
-    assert_files_equal("Updates/manifests/update/MANIFEST.sub", 
-                       "MANIFEST.sub")
-    assert_file_equals <<EOF, "Updates/temp/log"
+    assert run_exe("download-dir", "installed-program")
+    assert !File.exists?("installed-program/UPDATE.LCK")
+    assert_exists "installed-program/sub/quux.txt"
+    assert_file_equals "", "installed-program/sub/quux.txt"
+    assert_file_equals "foo\r\n", "installed-program/foo.txt"
+    assert_file_equals "foo\r\n", "installed-program/sub/foo.txt"
+    assert_files_equal "download-dir/Updates/release.spec", "installed-program/release.spec"
+    assert_files_equal("download-dir/Updates/manifests/update/MANIFEST.base", 
+                       "installed-program/MANIFEST.base")
+    assert_files_equal("download-dir/Updates/manifests/update/MANIFEST.sub", 
+                       "installed-program/MANIFEST.sub")
+    assert_file_equals <<EOF, "download-dir/Updates/temp/log"
 Checking if install is possible.\r
 Install is possible; beginning install.\r
 Update installed successfully. Relaunching.\r
 EOF
-    assert_operator download_mtime, :<, File.mtime("foo.txt")
+    assert_operator download_mtime, :<, File.mtime("installed-program/foo.txt")
   end
 
   def assert_fails_gracefully
-    assert !run_exe(".", ".")
-    assert_file_equals "", "foo.txt"
-    assert_file_equals "", "sub/foo.txt"
-    assert !File.exists?("sub/quux.txt")
+    assert !run_exe("download-dir", "installed-program")
+    assert_file_equals "", "installed-program/foo.txt"
+    assert_file_equals "", "installed-program/sub/foo.txt"
+    assert !File.exists?("installed-program/sub/quux.txt")
     assert_file_contains("Update is impossible; relaunching.", 
-                         "Updates/temp/log")
+                         "download-dir/Updates/temp/log")
   end
 
   def test_failed_install
-    FileUtils.rm "Updates/pool/#{$foo_digest}"
+    FileUtils.rm "download-dir/Updates/pool/#{$foo_digest}"
     assert_fails_gracefully
   end
 
   def test_no_permission
-    FileUtils.chmod 0400, "foo.txt"
+    FileUtils.chmod 0400, "installed-program/foo.txt"
     assert_fails_gracefully 
   end
 
   def test_uninstall_removes_lock_file
-    File.open("UPDATE.LCK", 'w') {|f| }
-    assert run_exe("--uninstall", ".")
-    assert !File.exists?("UPDATE.LCK")
-    assert !File.exists?("Updates/temp/log")
+    File.open("installed-program/UPDATE.LCK", 'w') {|f| }
+    assert_run_exe("--uninstall", "installed-program")
+    assert !File.exists?("installed-program/UPDATE.LCK")
+    assert !File.exists?("download-dir/Updates/temp/log")
   end
 
   def find_cmd_exe
@@ -161,17 +161,20 @@ EOF
   end
 
   def test_launch_program
-    FileUtils.cp(find_cmd_exe, "Test.exe")
-    assert_run_exe(".", ".", "Test",  "/C echo hello > command-output")
+    FileUtils.cp(find_cmd_exe, "installed-program/Test.exe")
+    assert_run_exe("download-dir", "installed-program", "installed-program/Test", 
+                   "/C echo hello > command-output")
     sleep 2 # give the executable a chance to run
-    assert_file_contains "hello", "command-output"    
+    assert_file_contains "hello", "command-output"
   end
 
   def test_find_new_program
-    FixtureBuilder.new.dir("engine/win32") do |fb|
+    FixtureBuilder.new.dir("installed-program/engine/win32") do |fb|
       FileUtils.cp(find_cmd_exe, "Halyard.exe")
     end
-    assert_run_exe(".", ".", "Tamale",  "/C echo hello > command-output")
+    assert_run_exe("download-dir", "installed-program", 
+                   "installed-program/Tamale", 
+                   "/C echo hello > command-output")
     sleep 2
     assert_file_contains "hello", "command-output"
   end
@@ -179,8 +182,8 @@ EOF
   # This test case passes, but only with manual interaction.  For
   # simplicity, I've disabled it for now.  Feel free to re-enable.
   #def test_should_not_install_to_directory_without_release_spec
-  #  FileUtils.rm "release.spec"
-  #  assert !system(EXE_PATH, ".", ".")
+  #  FileUtils.rm "installed-program/release.spec"
+  #  assert !system(EXE_PATH, "download-dir", "installed-program")
   #end
 end
 

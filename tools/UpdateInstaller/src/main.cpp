@@ -47,7 +47,7 @@ void LaunchProgram(bool update_succeeded, size_t argc, const char **argv) {
         // PORTABILITY - needs to be factored to work on platforms other
         // than Windows.
         path executable(argv[3], native);
-        path base(argv[1], native);
+        path base(argv[2], native);
         if (!exists(executable)) {
             char *paths[] = {"Tamale.exe", "engine/win32/Halyard.exe"};
             for (int i = 0; i < 2; ++i) {
