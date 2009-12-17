@@ -74,6 +74,7 @@ bool InstallTool::IsPossible() {
     FileOperation::Vector::const_iterator operation = mOperations.begin();
     for (; operation != mOperations.end(); ++operation) {
         if (!(*operation)->IsPossible()) {
+            MarkImpossible("Cannot " + (*operation)->Describe());
             return false;
         }
     }
@@ -258,6 +259,10 @@ void FileDelete::Perform() const {
         remove(file);
 }
 
+std::string FileDelete::Describe() const {
+    return "delete " + file.string();
+}
+
 bool FileTransfer::IsPossible() const {
     // Bug #1107: We've been having trouble with mysterious locks on our
     // source files, on at least one machine.  In an effort to avoid this,
@@ -276,6 +281,12 @@ void FileTransfer::Perform() const {
     TouchFile(mDest);
 }
 
+std::string FileTransfer::Describe() const {
+    std::string op(mMove ? "move" : "copy");
+    return op + " from " + mSource.file_string() + 
+        " to " + mDest.file_string();
+}
+
 bool CaseRename::IsPossible() const {
     return (exists(mSource) && exists(mDest));
 }
@@ -283,6 +294,10 @@ bool CaseRename::IsPossible() const {
 void CaseRename::Perform() const {
     CopyFileWithRetries(mSource, mDest, true);
     TouchFile(mDest);
+}
+
+std::string CaseRename::Describe() const {
+    return "rename from " + mSource.file_string() + " to " + mDest.file_string();
 }
 
 

@@ -88,7 +88,11 @@ void UpdaterMain(size_t argc, const char **argv) {
     LogFile *logger = LogFile::GetLogFile();
         
     try {
-        logger->Log("Checking if install is possible.");
+        if (uninstall) {
+            logger->Log("Checking if uninstall is possible.");
+        } else {
+            logger->Log("Checking if update install is possible.");
+        }
         InstallTool *tool;
 
         if (uninstall) {
@@ -106,14 +110,20 @@ void UpdaterMain(size_t argc, const char **argv) {
             // just relaunch the program.
             // TODO - On Vista, this will show a dialog claiming the update
             // was successful.
-            if (!uninstall) {
+            if (uninstall) {
+                logger->Log("Uninstall is impossible.");
+            } else {
                 logger->Log("Update is impossible; relaunching.");
                 LaunchProgram(false, argc, argv);
             }
             exit(1);
         }
-
-        logger->Log("Install is possible; beginning install.");
+        
+        if (uninstall) {
+            logger->Log("Uninstall is possible; beginning uninstall.");
+        } else {
+            logger->Log("Update install is possible; beginning install.");
+        }
         tool->Run();
     } catch (std::exception &e) {
         logger->Log(format("Error: %s") % e.what(), LogFile::FATAL);
@@ -121,7 +131,9 @@ void UpdaterMain(size_t argc, const char **argv) {
         logger->Log("Unknown error.", LogFile::FATAL);
     }
 
-    if (!uninstall) {
+    if (uninstall) {
+        logger->Log("Uninstall succeded.");
+    } else {
         logger->Log("Update installed successfully. Relaunching.");
         LaunchProgram(true, argc, argv);
     }

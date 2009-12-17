@@ -35,6 +35,7 @@ class FileOperation {
 public:
     virtual bool IsPossible() const = 0;
     virtual void Perform() const = 0;
+    virtual std::string Describe() const = 0;
 
     typedef boost::shared_ptr<FileOperation> Ptr;
     typedef std::vector<Ptr> Vector;
@@ -45,6 +46,7 @@ public:
     FileDelete(path inFile) : file(inFile) { }
     virtual bool IsPossible() const;
     virtual void Perform() const;
+    virtual std::string Describe() const;
 
 protected:
     path file;
@@ -62,6 +64,7 @@ public:
           mShouldExist(inShouldExist) { }
     virtual bool IsPossible() const;
     virtual void Perform() const;
+    virtual std::string Describe() const;
 
 protected:
     path mSource, mDest;
@@ -86,6 +89,8 @@ public:
         : mSource(inSource), mDest(inDest) { }
     virtual bool IsPossible() const;
     virtual void Perform() const;
+    virtual std::string Describe() const;
+
 protected:
     path mSource, mDest;
 };

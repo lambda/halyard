@@ -127,8 +127,8 @@ class UpdateInstallerSimpleTest < UpdateInstallerTest
     assert_files_equal("download-dir/Updates/manifests/update/MANIFEST.sub", 
                        "installed-program/MANIFEST.sub")
     assert_file_equals <<EOF, "download-dir/Updates/temp/log"
-Checking if install is possible.\r
-Install is possible; beginning install.\r
+Checking if update install is possible.\r
+Update install is possible; beginning install.\r
 Update installed successfully. Relaunching.\r
 EOF
     assert_operator download_mtime, :<, File.mtime("installed-program/foo.txt")

@@ -30,6 +30,7 @@
 #include "SpecFile.h"
 #include "CommandLine.h"
 #include "UpdateInstaller.h"
+#include "LogFile.h"
 #include "Interface.h"
 
 using boost::filesystem::path;
@@ -134,17 +135,26 @@ BOOST_AUTO_TEST_CASE(test_windows_command_line_quoting) {
 }
 
 BOOST_AUTO_TEST_CASE(test_is_update_possible) {
+    LogFile::InitLogFile(updates_path / "temp" / "log");
+
     UpdateInstaller installer = UpdateInstaller(path("download-dir"), 
                                                 path("installed-program"));
     
     installer.Prepare();
     BOOST_REQUIRE(installer.IsPossible());    
-
-    rename(path(updates_path / "pool") / foo_digest,
-           path(updates_path / "pool/temp"));
+    
+    // Make the update impossible
+    rename(updates_path / "pool" / foo_digest,
+           updates_path / "pool/temp");
     BOOST_CHECK(!installer.IsPossible());
     
-    rename(path(updates_path / "pool/temp"),
-           path(updates_path / "pool") / foo_digest);
+    // Fix the damage
+    rename(updates_path / "pool/temp",
+           updates_path / "pool" / foo_digest);
+
+    // Reset the installer, now that that one's been marked impossible
+    installer = UpdateInstaller(path("download-dir"), path("installed-program"));
+    installer.Prepare();
+
     BOOST_CHECK(installer.IsPossible());
 }
