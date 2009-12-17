@@ -305,33 +305,44 @@ class UpdateInstallerSmarterUpdateTest < UpdateInstallerTest
   MOVED_TEXT = "This file should be moved"
   OVERWRITTEN_TEXT = "Here are the new contents of this file"
   MULTIPLE_LOCATIONS_TEXT = "This file should be installed in multiple locations"
+  COPIED_FROM_ANY_LOCATION = "This file should be copied, and will exist " +
+    "in several locations on disk"
 
   def setup
     super
-    run_exe "download-dir", "installed-program"
   end
 
   def prepare_tempdir name
     UpdaterFixtureBuilder.new.dir name do |fb|
       fb.create_build("installed-program", "build-A", 
                       :component => %w[copied deleted 
-                                       moved overwritten]) do |fb|
+                                       moved overwritten
+                                       copied-from-any-location-1
+                                       copied-from-any-location-2]) do |fb|
         fb.file "copied", COPIED_TEXT
         fb.file "deleted", "This file should be deleted"
         fb.file "moved", MOVED_TEXT
         fb.file "overwritten", "This file should be overwritten"
+        %w[1 2].each do |i|
+          fb.file "copied-from-any-location-#{i}", COPIED_FROM_ANY_LOCATION
+        end
       end
       fb.create_build("new-version", "build-B",
                       :component => %w[copied from-copied from-moved
                                        overwritten multiple-locations-1
                                        multiple-locations-2
-                                       multiple-locations-3]) do |fb|
+                                       multiple-locations-3
+                                       copied-from-any-location-2
+                                       copied-from-any-location-3]) do |fb|
         fb.file "copied", COPIED_TEXT
         fb.file "from-copied", COPIED_TEXT
         fb.file "from-moved", MOVED_TEXT
         fb.file "overwritten", OVERWRITTEN_TEXT
         %w[1 2 3].each do |i|
           fb.file "multiple-locations-#{i}", MULTIPLE_LOCATIONS_TEXT
+        end
+        %w[2 3].each do |i|
+          fb.file "copied-from-any-location-#{i}", COPIED_FROM_ANY_LOCATION
         end
       end
       fb.create_download "download-dir", "build-B" do |fb|
@@ -342,29 +353,68 @@ class UpdateInstallerSmarterUpdateTest < UpdateInstallerTest
   end
 
   def test_copy_files_from_tree
+    assert_run_exe "download-dir", "installed-program"
     assert_file_equals COPIED_TEXT, "installed-program/copied"
     assert_file_equals COPIED_TEXT, "installed-program/from-copied"
   end
 
   def test_move_files_in_tree
+    assert_run_exe "download-dir", "installed-program"
     assert !File.exists?("installed-program/moved")
     assert_file_equals MOVED_TEXT, "installed-program/from-moved"
   end
 
   def test_delete_files_from_tree
+    assert_run_exe "download-dir", "installed-program"
     assert !File.exists?("installed-program/deleted")
   end
 
   def test_overwrite_file
+    assert_run_exe "download-dir", "installed-program"
     assert_file_equals OVERWRITTEN_TEXT, "installed-program/overwritten"
   end
 
   def test_pool_cleared
+    assert_run_exe "download-dir", "installed-program"
     %w[1 2 3].each do |i|
       assert_file_equals(MULTIPLE_LOCATIONS_TEXT, 
                          "installed-program/multiple-locations-#{i}")
     end
     assert_equal [], Dir["download-dir/Updates/pool/*"]
+  end
+
+  def test_copied_from_tree_with_holes
+    # This tests a case in which our original install is screwed up; there
+    # is a file that is supposed to exist on the disk, but does not, which
+    # the update installer needs the contents of.  Luckily, there is another
+    # file on the disk with the same contents, so we can use that instead of
+    # the missing one.  Since we don't know which one the updater will pick
+    # first, we need to try both cases of the file missing in two seperate
+    # test cases.  We also test a move versus a copy of the file that does
+    # exist in these two test cases.
+    FileUtils.rm "installed-program/copied-from-any-location-1"
+    assert_run_exe "download-dir", "installed-program"
+    assert !File.exists?("installed-program/copied-from-any-location-1")
+    assert_file_equals(COPIED_FROM_ANY_LOCATION, 
+                       "installed-program/copied-from-any-location-2")
+    assert_file_equals(COPIED_FROM_ANY_LOCATION, 
+                       "installed-program/copied-from-any-location-3")
+  end
+
+  def test_moved_from_tree_with_holes
+    FileUtils.rm "installed-program/copied-from-any-location-2"
+    assert_run_exe "download-dir", "installed-program"
+    assert !File.exists?("installed-program/copied-from-any-location-1")
+    # Note: This file is present in the original and update manifests, but
+    # was missing on the disk.  We have never done anything about such files
+    # in the past, and due to a bug in which the AUTO-UPDATE file was
+    # accidentally included in a manifest, we actually don't want to create
+    # this file even if the manifest says it should exist and we have a
+    # copy of it somewhere else.  So, we test here that it continues to be
+    # missing.
+    assert !File.exists?("installed-program/copied-from-any-location-2")
+    assert_file_equals(COPIED_FROM_ANY_LOCATION, 
+                       "installed-program/copied-from-any-location-3")
   end
 end
 

@@ -71,6 +71,20 @@ void UpdateInstaller::CalculateFileSetsForUpdates() {
         // Otherwise, there should be a file with this digest in the old tree
         FileSet::DigestMap::const_iterator entries_with_digest =
             mExistingFiles.DigestEntryMap().find(*digest_iter);
+
+        // Pick the first file with the given digest that actually
+        // exists on the disk.  Note that these all *should* exist on
+        // the disk; but due to a bug, at one point the AUTO-UPDATE
+        // file was not on the disk but was in the manifest, which
+        // caused this code to reliably pick AUTO-UPDATE and later
+        // fail when looking for an empty file to copy around.  So,
+        // now we actually check to see if the file exists, and try
+        // finding another copy if it does not.
+        while (entries_with_digest != mExistingFiles.DigestEntryMap().end() && 
+               !exists(PathInTree(entries_with_digest->second))) {
+            ++entries_with_digest;
+        }
+
         if (entries_with_digest == mExistingFiles.DigestEntryMap().end()) {
             // Uh, oh! This doesn't appear to be in our tree or our pool.
             // Looks like something went wrong, and we can't update; flag
@@ -80,7 +94,6 @@ void UpdateInstaller::CalculateFileSetsForUpdates() {
             return;
         }
 
-        // Pick the first file with the given digest
         FileSet::Entry file(entries_with_digest->second);
 
         // If we still need this file at the same location with the

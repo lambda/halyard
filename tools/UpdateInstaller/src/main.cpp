@@ -106,13 +106,13 @@ void UpdaterMain(size_t argc, const char **argv) {
         tool->Prepare();
 
         if (!tool->IsPossible()) {
-            // If we determine, safely, that updating is impossible, we should
-            // just relaunch the program.
-            // TODO - On Vista, this will show a dialog claiming the update
-            // was successful.
             if (uninstall) {
                 logger->Log("Uninstall is impossible.");
             } else {
+                // If we determine, safely, that updating is impossible, we should
+                // just relaunch the program.
+                // TODO - On Vista, this will show a dialog claiming the update
+                // was successful.
                 logger->Log("Update is impossible; relaunching.");
                 LaunchProgram(false, argc, argv);
             }
