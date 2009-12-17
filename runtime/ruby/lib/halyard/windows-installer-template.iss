@@ -55,7 +55,7 @@ Source: binaries\gnupg-1.4.7.tar.bz2; DestDir: {app}\binaries; Flags: skipifsour
 ;; Note that this file is not included in the update manifests, and can't
 ;; be moved to a new location without teaching UpdateInstaller.exe about
 ;; how to handle the move.
-Source: AUTO-UPDATE; DestDir: {app}; Flags: skipifsourcedoesntexist; Components: base; Tasks: autoupdate
+Source: AUTO-UPDATE; DestDir: {app}; Flags: skipifsourcedoesntexist; Tasks: autoupdate
 
 ;; TODO - Make sure halyard/test has LICENSE.txt.
 Source: LICENSE.txt; DestDir: {app}; Flags: skipifsourcedoesntexist; Components: base

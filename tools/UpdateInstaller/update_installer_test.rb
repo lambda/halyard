@@ -318,7 +318,8 @@ class UpdateInstallerSmarterUpdateTest < UpdateInstallerTest
                       :component => %w[copied deleted 
                                        moved overwritten
                                        copied-from-any-location-1
-                                       copied-from-any-location-2]) do |fb|
+                                       copied-from-any-location-2
+                                       AUTO-UPDATE]) do |fb|
         fb.file "copied", COPIED_TEXT
         fb.file "deleted", "This file should be deleted"
         fb.file "moved", MOVED_TEXT
@@ -326,6 +327,7 @@ class UpdateInstallerSmarterUpdateTest < UpdateInstallerTest
         %w[1 2].each do |i|
           fb.file "copied-from-any-location-#{i}", COPIED_FROM_ANY_LOCATION
         end
+        fb.file "AUTO-UPDATE", ""
       end
       fb.create_build("new-version", "build-B",
                       :component => %w[copied from-copied from-moved
@@ -415,6 +417,11 @@ class UpdateInstallerSmarterUpdateTest < UpdateInstallerTest
     assert !File.exists?("installed-program/copied-from-any-location-2")
     assert_file_equals(COPIED_FROM_ANY_LOCATION, 
                        "installed-program/copied-from-any-location-3")
+  end
+
+  def test_dont_delete_auto_update
+    assert_run_exe "download-dir", "installed-program"
+    assert_file_equals "", "installed-program/AUTO-UPDATE"
   end
 end
 

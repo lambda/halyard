@@ -142,6 +142,13 @@ void UpdateInstaller::BuildTreeToPoolFileOperations() {
         mOperations.push_back(operation);
     }
     BOOST_FOREACH(FileSet::Entry file, mFilesToDeleteFromTree.Entries()) {
+        // Don't ever touch the AUTO-UPDATE file.  This shouldn't have ever
+        // been included in our manifests, but it was once, so we need to
+        // make sure we don't delete it after removing it from our manifests
+        // (or add it later if we make that mistake again).
+        if (file.path() == "AUTO-UPDATE")
+            continue;
+
         FileOperation::Ptr operation(new FileDelete(PathInTree(file)));
         mOperations.push_back(operation);
     }
@@ -158,20 +165,32 @@ void UpdateInstaller::BuildPoolToTreeFileOperations() {
             file_for_digest(digest_tracker.find(file.digest()));
         // If this is the last file with this digest, we should do a move
         if (digest_tracker.count(file.digest()) == 1) {
+            // This entry should be the only one left; assert that and remove it.
             assert(file_for_digest->second == file);
             digest_tracker.erase(file_for_digest);
+
+            // Don't touch AUTO-UPDATE.  See BuildTreeToPoolFileOperations().
+            if (file.path() == "AUTO-UPDATE")
+                continue;
+
             FileOperation::Ptr
                 operation(new FileTransfer(PathInPool(file), PathInTree(file),
                                            /* move? */ true,
                                            FileShouldBeInPool(file)));
             mOperations.push_back(operation);
         } else {
+            // Find this file out of all the matching entries in digest_tracker, 
+            // and remove it.
             while (file_for_digest != digest_tracker.end() &&
                    !(file_for_digest->second == file)) {
                 ++file_for_digest;
             }
             assert(file_for_digest != digest_tracker.end());
             digest_tracker.erase(file_for_digest);
+
+            // Don't touch AUTO-UPDATE.  See BuildTreeToPoolFileOperations().
+            if (file.path() == "AUTO-UPDATE")
+                continue;
             
             FileOperation::Ptr
                 operation(new FileTransfer(PathInPool(file), PathInTree(file),
