@@ -59,15 +59,24 @@ void Uninstaller::Prepare() {
 }
 
 void Uninstaller::Run() {
-    // Lock the directory? We would need to do so without failing if the 
-    // lock exists.
+    path lock(mDestRoot / LOCK_NAME);
+    // Lock the directory, unless we already have a lock (since we're
+    // uninstalling, we still want to uninstall even if the directory is
+    // already locked, since it's probably locked due to a failed update).
+    if (!exists(lock)) {
+        FILE *f = fopen(lock.native_file_string().c_str(), "w");
+        // Don't worry if we can't create the lock file; it shouldn't matter
+        // too much since we're just trying to blow the whole directory away,
+        // and it would be better to try to continue than give up now.
+        if (f)
+            fclose(f);
+    }
 
     InstallTool::Run();
 
     // Clean up any leftover lock files.  Without this, a failed
     // update would make it effectively impossible for ordinary users
     // to uninstall and reinstall the program.
-    path lock(mDestRoot / LOCK_NAME);
     if (exists(lock))
         remove(lock);
 }
