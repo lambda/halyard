@@ -509,6 +509,7 @@ class UninstallCleanupTest < UpdateInstallerTest
                                        scripts/other-extension.txt
                                        engine/win32/dir/MANIFEST.base
                                        top-level-file.txt
+                                       UpdateInstaller.exe
                                        graphics/foo.png]) do |fb|
         fb.dir "scripts" do |fb|
           fb.file "file.ss", "contents"
@@ -523,6 +524,7 @@ class UninstallCleanupTest < UpdateInstallerTest
         fb.file "untracked-top-level-file.txt", "things"
         fb.file "graphics/foo.png", "another file"
         fb.file "UPDATE.LCK", ""
+        fb.file "UpdateInstaller.exe", "this is the installer"
         fb.dir "empty-dir"
       end
     end
@@ -530,13 +532,22 @@ class UninstallCleanupTest < UpdateInstallerTest
 
   def test_uninstall_successfull
     assert_run_exe("--uninstall", "installed-program")
-    assert_equal(["installed-program/MANIFEST.component",
+    assert_equal([# Don't delete our manifests or release.spec
+                  "installed-program/MANIFEST.component",
                   "installed-program/release.spec",
                   # TODO - we really shouldn't have this temp directory, it
                   # is only present as a place to stick log output when
-                  # uninstalling
+                  # uninstalling.  But, since it's in use and the log file
+                  # can't be deleted, we should ignore this directory.
                   "installed-program/temp", 
-                  "installed-program/untracked-top-level-file.txt"],
+                  # This is an untracked file in the top level, as a stand-in
+                  # for the various files that InnoSetup leaves there to aid
+                  # the uninstall.
+                  "installed-program/untracked-top-level-file.txt",
+                  # We can't delete the UpdateInstaller.exe itself; though
+                  # in the test case, since the exe is in a different directory,
+                  # we'll just make sure we don't delete this dummy file.
+                  "installed-program/UpdateInstaller.exe"],
                  Dir["installed-program/*"])
   end
 

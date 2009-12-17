@@ -28,24 +28,30 @@
 
 void Uninstaller::Prepare() {
     // We're uninstalling, so keep the files that we're currently
-    // using (manifests and release.spec).
+    // using.  These files haven't ever moved, so InnoSetup should be
+    // able to deal with them (except for the log file and lock file,
+    // which we need to deal with ourselves).
     SpecFile spec(mDestRoot / "release.spec");
     LowercaseFilenameMap 
         files_to_keep(CreateLowercaseFilenameMap(spec.manifest()));
     InsertIntoLowercaseFilenameMap(files_to_keep, "release.spec");
+    InsertIntoLowercaseFilenameMap(files_to_keep, "UpdateInstaller.exe");
+    InsertIntoLowercaseFilenameMap(files_to_keep, "temp/log");
+    InsertIntoLowercaseFilenameMap(files_to_keep, LOCK_NAME);
 
     // Delete everything in our existing manifest.
     LowercaseFilenameMap 
         files_to_delete(CreateLowercaseFilenameMap(mExistingFiles));
-    
-    LowercaseFilenameMap directories_to_keep;
-    // We don't need to delete the temp directory, which is currently being
-    // used to hold the log file for this uninstall.
-    InsertIntoLowercaseFilenameMap(directories_to_keep, "temp");
+
+    // Base our directories to keep on the set of files to keep from above.
+    LowercaseFilenameMap directories_to_keep(DirectoriesForFiles(files_to_keep));
     // We don't need to delete the top-level directory; InnoSetup should do
     // that for us if we delete all of the files it doesn't know about, and
     // the top-level directory will contain some InnoSetup files that we
-    // can't delete anyhow.
+    // can't delete anyhow.  As our DirectoriesForFiles computation hasn't
+    // included the root directory in the past, and I don't want to figure
+    // out if it's safe to include that, we'll add the root directory 
+    // manually.
     InsertIntoLowercaseFilenameMap(directories_to_keep, "");
 
     BuildCleanupRecursive(mDestRoot, files_to_delete, files_to_keep,

@@ -121,7 +121,11 @@ bool InstallTool::BuildCleanupRecursive
             if (BuildCleanupRecursive(full_path, files_to_delete,
                                       files_to_keep, directories_to_keep))
                 contains_undeletable_files = true;
-        } else if (files_to_delete.count(relative_path_string) > 0) {
+        } else if (files_to_delete.count(relative_path_string) > 0 &&
+                   files_to_keep.count(relative_path_string) == 0) {
+            // We want to be able to override our explicit deletes by explicitly
+            // listing a file to keep; so only delete this file if it's listed
+            // in our files_to_delete and not in our files_to_keep.
             FileOperation::Ptr operation(new FileDelete(full_path));
             mOperations.push_back(operation);            
         } else if (files_to_keep.count(relative_path_string) == 0) {
@@ -183,18 +187,35 @@ InstallTool::LowercaseFilenameMap
 InstallTool::DirectoriesForFiles(const FileSet &files) 
 {
     // See comment in FileSet.h on named return value optimization.
-    LowercaseFilenameMap directories;
+    LowercaseFilenameMap directory_map;
     BOOST_FOREACH(FileSet::Entry entry, files.Entries()) {
-        std::string filename(entry.path());
-        path p(filename);
-        while (p.has_parent_path()) {
-            p = p.parent_path();
-            InsertIntoLowercaseFilenameMap(directories, p.string());
-        }
+        InsertAncestorDirecotries(directory_map, entry.path());
     }
     
-    return directories;
+    return directory_map;
 }
+
+InstallTool::LowercaseFilenameMap
+InstallTool::DirectoriesForFiles(const InstallTool::LowercaseFilenameMap &map) 
+{
+    LowercaseFilenameMap directory_map;
+    BOOST_FOREACH(LowercaseFilenameMap::value_type file, map) {
+        InsertAncestorDirecotries(directory_map, file.second);
+    }
+
+    return directory_map;
+}
+
+void 
+InstallTool::InsertAncestorDirecotries(InstallTool::LowercaseFilenameMap &map, 
+                                       const std::string &file)
+{
+    path p(file);
+    while (p.has_parent_path()) {
+        p = p.parent_path();
+        InsertIntoLowercaseFilenameMap(map, p.string());
+    }    
+}                                                              
 
 InstallTool::LowercaseFilenameMap 
 InstallTool::CreateLowercaseFilenameMap(const FileSet &files) {

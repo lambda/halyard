@@ -138,8 +138,12 @@ protected:
     // case-preserved filenames.
     typedef boost::unordered_map<std::string,std::string> LowercaseFilenameMap;
     typedef LowercaseFilenameMap::value_type LowercaseFilenamePair;
-    LowercaseFilenameMap DirectoriesForFiles(const FileSet &files);
-    LowercaseFilenameMap CreateLowercaseFilenameMap(const FileSet &files);
+    static LowercaseFilenameMap DirectoriesForFiles(const FileSet &files);
+    static LowercaseFilenameMap DirectoriesForFiles(const LowercaseFilenameMap 
+                                                    &map);
+    static void InsertAncestorDirecotries(LowercaseFilenameMap &map,
+                                          const std::string &file);
+    static LowercaseFilenameMap CreateLowercaseFilenameMap(const FileSet &files);
     static void InsertIntoLowercaseFilenameMap(LowercaseFilenameMap &map,
                                                const std::string &filename);
 
