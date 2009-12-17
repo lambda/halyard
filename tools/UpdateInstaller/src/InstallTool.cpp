@@ -77,6 +77,10 @@ bool InstallTool::IsPossible() {
             MarkImpossible("Cannot " + (*operation)->Describe());
             return false;
         }
+
+        // Call UpdateProgress to let Windows process events, so it
+        // doesn't appear that we're frozen.
+        UpdateProgress(0);
     }
 
     // Otherwise, we're golden.
@@ -163,6 +167,10 @@ bool InstallTool::BuildCleanupRecursive
                            "; contains unexpected files");
         }
     }
+
+    // Call UpdateProgress to let Windows process events, so it
+    // doesn't appear that we're frozen.
+    UpdateProgress(0);
 
     return contains_undeletable_files;
 }

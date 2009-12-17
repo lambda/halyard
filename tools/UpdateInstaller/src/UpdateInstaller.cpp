@@ -92,6 +92,10 @@ void UpdateInstaller::CalculateFileSetsForUpdates() {
             // Otherwise, add it to the list of files to move to the pool
             mFilesToMoveFromTreeToPool.AddEntry(file);
         }
+
+        // Call UpdateProgress to let Windows process events, so it
+        // doesn't appear that we're frozen.
+        UpdateProgress(0);
     }
 
     // The files left that we need to delete are the files that we have
@@ -128,6 +132,10 @@ void UpdateInstaller::BuildTreeToPoolFileOperations() {
         FileOperation::Ptr operation(new FileDelete(PathInTree(file)));
         mOperations.push_back(operation);
     }
+
+    // Call UpdateProgress to let Windows process events, so it
+    // doesn't appear that we're frozen.
+    UpdateProgress(0);
 }
 
 void UpdateInstaller::BuildPoolToTreeFileOperations() {
@@ -159,6 +167,10 @@ void UpdateInstaller::BuildPoolToTreeFileOperations() {
             mOperations.push_back(operation);
         }
     }
+
+    // Call UpdateProgress to let Windows process events, so it
+    // doesn't appear that we're frozen.
+    UpdateProgress(0);
 }
 
 void UpdateInstaller::BuildUpdaterSpecialFileOperations() {
@@ -179,6 +191,10 @@ void UpdateInstaller::BuildUpdaterSpecialFileOperations() {
         operation(new FileTransfer(mSrcRoot / "Updates/release.spec", 
                                    mDestRoot / "release.spec"));
     mOperations.push_back(operation);
+
+    // Call UpdateProgress to let Windows process events, so it
+    // doesn't appear that we're frozen.
+    UpdateProgress(0);
 }
 
 void UpdateInstaller::BuildDirectoryCleanupFileOperations() {
@@ -218,6 +234,10 @@ void UpdateInstaller::BuildDirectoryCleanupFileOperations() {
                               known_files, directories_to_keep);
         if (!mIsPossible) return;
     }
+
+    // Call UpdateProgress to let Windows process events, so it
+    // doesn't appear that we're frozen.
+    UpdateProgress(0);
 }
 
 void UpdateInstaller::BuildCaseRenameFileOperations() {
@@ -241,6 +261,10 @@ void UpdateInstaller::BuildCaseRenameFileOperations() {
                                      mDestRoot / update_dir.second));
         mOperations.push_back(operation);
     }
+
+    // Call UpdateProgress to let Windows process events, so it
+    // doesn't appear that we're frozen.
+    UpdateProgress(0);
 }
 
 bool UpdateInstaller::FileShouldBeInPool(const FileSet::Entry &e) {
