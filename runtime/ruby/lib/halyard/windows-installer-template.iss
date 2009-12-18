@@ -1,3 +1,10 @@
+;; We require InnoSetup 5.3.2-beta or later, as that's when PrepareToInstall
+;; was introduced, which is critical for being able to install Halyard 0.6.x
+;; prgrams over existing Halyard 0.4.x programs.
+#if Ver < 0x05030200
+  #error A more recent version of Inno Setup (>= 5.3.2) is required to compile this script
+#endif
+
 ;; Set this to 1 to include various useful debugging stuff, and 0
 ;; to make a final build.
 #define INCLUDE_DEBUGGING_SUPPORT 0
@@ -171,6 +178,12 @@ const
     // with minimum support for QuickTime 6; there should be a better
     // one available in the QuickTime update service.
     MinimumVP3Version = 131075;
+    UninstallError =
+        'Installation is impossible. You appear to be installing over an ' +
+        'existing installation of {cm:AppShortName}, ' +
+        'which contains files that the installer cannot ' +
+        'delete. Please choose another directory to install ' +
+        'into, or delete this directory and try again.';
 
 var
     // Cached checks for QuickTime components.
@@ -340,6 +353,43 @@ begin
     end;
 end;
 
+// This function is called to prepare for installation.  We do this by
+// checking to see if the chosen destination directory already has an
+// installed program.  If it does, we use the UpdateInstaller.exe to
+// clean it out before installing, so that old files and directories
+// won't cause problems for the newly installed program.  If
+// UpdateInstaller.exe fails, we return an error message, which will
+// cause the installation to fail.
+function PrepareToInstall(): String;
+var
+    ResultCode: Integer;
+begin
+    Result := '';
+
+    if FileCheck(ExpandConstant('{app}\release.spec')) then begin
+        ExtractTemporaryFile('UpdateInstaller.exe');
+        if Exec(ExpandConstant('{tmp}\UpdateInstaller.exe'),
+                               '--uninstall "' + ExpandConstant('{app}') + '"',
+                               '', SW_SHOW, ewWaitUntilTerminated,
+                               ResultCode) then begin
+            // The exec call succeeded.  Check the return code to see whether
+            // the uninstall succeeded.
+            if ResultCode <> 0 then begin
+                Result := ExpandConstant(UninstallError);
+            end;
+        end
+        else begin
+            // The exec call failed.
+            // TODO - Should we give a different error message indicating that
+            // something went wrong with the installer? I'm not really sure
+            // what failure here means; it may mean that the installer couldn't
+            // extract a temporary UpdateInstaller.exe, or couldn't launch
+            // it for some reason.
+            Result := ExpandConstant(UninstallError);
+        end;
+    end;
+end;
+
 // This routine used to fail under QuickTime 6 (because the old QuickTime
 // installer would leave half-installed messes behind if the user cancelled),
 // but QuickTime 7 appears to much better behaved in our testing.  Still, this
@@ -355,3 +405,10 @@ end;
 //		       mbError, MB_OK);
 //	end;
 //end;
+
+
+
+
+
+
+

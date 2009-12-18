@@ -184,11 +184,13 @@ void ReportErrorInternal(LPTSTR message) {
     ::MessageBox(NULL, full_message.c_str(),
                  NULL, MB_TASKMODAL | MB_OK | MB_ICONSTOP);
 
-    // Fail hard.  If we're lucky, this will send a short-form crash report
-    // to Microsoft's centralized crash reporter.  And if we're signed our
-    // application using a level 3 Authenticode key, we should be able to get
-    // a Windows Logo program account and download the crash reports.
-    ::abort();
+    // Fail hard.  We used to call abort() in the hopes of getting a crash
+    // report sent to Microsoft, but that caused problems in some cases
+    // with the Visual Studio debugger coming up, and then returning an
+    // exit code of 0 which made it hard to detect when we had failed and
+    // prevent installation.  So now we just call exit(1) explicitly to
+    // guarantee that we have a failing return code.
+    ::exit(1);
 }
 
 /// Is it safe to relaunch the application automatically after updating it?
