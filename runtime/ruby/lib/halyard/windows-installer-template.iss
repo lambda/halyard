@@ -369,7 +369,7 @@ begin
     if FileCheck(ExpandConstant('{app}\release.spec')) then begin
         ExtractTemporaryFile('UpdateInstaller.exe');
         if Exec(ExpandConstant('{tmp}\UpdateInstaller.exe'),
-                               '--uninstall "' + ExpandConstant('{app}') + '"',
+                               '--cleanup "' + ExpandConstant('{app}') + '"',
                                '', SW_SHOW, ewWaitUntilTerminated,
                                ResultCode) then begin
             // The exec call succeeded.  Check the return code to see whether

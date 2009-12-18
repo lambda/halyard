@@ -106,6 +106,7 @@ public:
     virtual void Prepare() = 0;
     virtual bool IsPossible();
     virtual void Run();
+    virtual void PerformOperation(const FileOperation::Ptr op);
 
 protected:
     // This is the directory our program is installed in.

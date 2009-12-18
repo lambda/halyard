@@ -27,10 +27,15 @@
 
 class Uninstaller : public InstallTool {
 public:
-    Uninstaller(const path &dst_root) : InstallTool(dst_root) { }
+    Uninstaller(const path &dst_root, bool best_effort) : 
+        InstallTool(dst_root), mBestEffort(best_effort) { }
 
     virtual void Prepare();
     virtual void Run();
+    virtual void PerformOperation(const FileOperation::Ptr op);
+
+private:
+    bool mBestEffort;
 };
 
 #endif // Uninstaller_H

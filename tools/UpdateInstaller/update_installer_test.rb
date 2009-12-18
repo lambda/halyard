@@ -608,8 +608,31 @@ class UninstallCleanupTest < UpdateInstallerTest
                  Dir["installed-program/*"])
   end
 
-  def test_uninstall_fails
+  def test_cleanup_fails
     File.open("installed-program/collects/untracked-dir/important.doc", 'w') {|f|}
-    assert !run_exe("--uninstall", "installed-program")
+    assert !run_exe("--cleanup", "installed-program")
+    assert File.exists?("installed-program/top-level-file.txt")
+  end
+
+  def test_uninstall_best_effort
+    # We test here that uninstallation will proceed even if there are undeletable
+    # files or directories; it will delete everything it can, but leave files
+    # that it doesn't know about.
+    File.open("installed-program/collects/untracked-dir/important.doc", 'w') {|f|}
+    
+    # Have one of the files we want to delete open while the uninstaller runs,
+    # to test to make sure we can handle the case of a file being undeleteable.
+    File.open("installed-program/graphics/foo.png", 'a') do |f|
+      assert_run_exe("--uninstall", "installed-program")
+    end
+
+    assert File.exists?("installed-program/collects/untracked-dir/important.doc")
+    assert File.exists?("installed-program/untracked-top-level-file.txt")
+
+    # For some reason, deleting the graphics/foo.png file succeeds, even though
+    # it's open, but deleting the directory does not.
+    assert File.exists?("installed-program/graphics")
+    assert !File.exists?("installed-program/top-level-file.txt")
+    assert !File.exists?("installed-program/scripts")
   end
 end

@@ -74,9 +74,16 @@ void UpdaterMain(size_t argc, const char **argv) {
         exit(1);
     } 
     
+    // --cleanup indicates that we should clean out the directory in
+    // preparation for an install.  This does the same thing as
+    // --uninstall, except it checks first to see if it's possible to
+    // clean everything out, and fails if not, while --uninstall tries
+    // to do the best it can to delete everything that's safe to
+    // delete.
+    bool cleanup = (strcmp(argv[1], "--cleanup") == 0);
     bool uninstall = (strcmp(argv[1], "--uninstall") == 0);
     
-    if (uninstall) {
+    if (uninstall || cleanup) {
         // FIXME - temporary hack so I can continue working until I
         // figure out what to do with this log file.
         LogFile::InitLogFile(path(argv[2], native) / "temp" / "log");
@@ -88,16 +95,18 @@ void UpdaterMain(size_t argc, const char **argv) {
     LogFile *logger = LogFile::GetLogFile();
         
     try {
-        if (uninstall) {
-            logger->Log("Checking if uninstall is possible.");
+        if (cleanup) {
+            logger->Log("Checking if cleanup is possible.");
+        } else if (uninstall) {
+            logger->Log("Beginning uninstall");
         } else {
             logger->Log("Checking if update install is possible.");
         }
         InstallTool *tool;
 
-        if (uninstall) {
+        if (uninstall || cleanup) {
             path root(argv[2], native);
-            tool = new Uninstaller(root);
+            tool = new Uninstaller(root, uninstall);
         } else {
             tool = new UpdateInstaller(path(argv[1], native),
                                        path(argv[2], native));
@@ -105,9 +114,14 @@ void UpdaterMain(size_t argc, const char **argv) {
         
         tool->Prepare();
 
-        if (!tool->IsPossible()) {
-            if (uninstall) {
-                logger->Log("Uninstall is impossible.");
+        // If we're in --uninstall mode, we don't check if all of the
+        // operations are possible.  We simply do our best effort to
+        // delete everything we can.  We check if cleanup or install is
+        // possible, though, so we don't break an existing installation
+        // if it is not.
+        if (!uninstall && !tool->IsPossible()) {
+            if (cleanup) {
+                logger->Log("Cleanup is impossible.");
             } else {
                 // If we determine, safely, that updating is impossible, we should
                 // just relaunch the program.
@@ -119,7 +133,7 @@ void UpdaterMain(size_t argc, const char **argv) {
             exit(1);
         }
         
-        if (uninstall) {
+        if (uninstall || cleanup) {
             logger->Log("Uninstall is possible; beginning uninstall.");
         } else {
             logger->Log("Update install is possible; beginning install.");
@@ -131,7 +145,9 @@ void UpdaterMain(size_t argc, const char **argv) {
         logger->Log("Unknown error.", LogFile::FATAL);
     }
 
-    if (uninstall) {
+    if (cleanup) {
+        logger->Log("Cleanup succeded.");
+    } else if (uninstall) {
         logger->Log("Uninstall succeded.");
     } else {
         logger->Log("Update installed successfully. Relaunching.");

@@ -25,6 +25,7 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/convenience.hpp>
 #include "FileSet.h"
+#include "LogFile.h"
 
 void Uninstaller::Prepare() {
     // We're uninstalling, so keep the files that we're currently
@@ -79,4 +80,21 @@ void Uninstaller::Run() {
     // to uninstall and reinstall the program.
     if (exists(lock))
         remove(lock);
+}
+
+void Uninstaller::PerformOperation(const FileOperation::Ptr op) {
+    if (mBestEffort) {
+        // If we're in best-effort mode (which means we're operating as
+        // --uninstall and not --cleanup), we just log all errors we get
+        // while performing operations and move on, instead of crashing.
+        try {
+            op->Perform();
+        } catch (std::exception &e) {
+            LogFile::GetLogFile()->Log(std::string("Error: ") + e.what());
+        } catch (...) {
+            LogFile::GetLogFile()->Log("Unknown error.");
+        }
+    } else {
+        op->Perform();
+    }
 }

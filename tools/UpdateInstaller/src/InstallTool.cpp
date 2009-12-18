@@ -93,11 +93,14 @@ void InstallTool::Run() {
     FileOperation::Vector::const_iterator operation = mOperations.begin();
     for (size_t i = 0; operation != mOperations.end(); ++operation, ++i) {
         UpdateProgress(i);
-        (*operation)->Perform();
+        PerformOperation(*operation);
     }
     UpdateProgress(total);
 }
 
+void InstallTool::PerformOperation(const FileOperation::Ptr op) {
+    op->Perform();
+}
 
 //=========================================================================
 //  Install Tool internals
