@@ -1,3 +1,40 @@
+0.6.3 - 20 Dec 2009
+
+This release adds support to the UpdateInstaller for uninstalling a previous
+installation.  Inno Setup adds its uninstaller to the Windows Add/Remove
+Programs control panel.  It does not know about any files that may have
+been created during an update, however.  In order to deal with that, we
+have set it up to call UpdateInstaller.exe --uninstall, but until now, that
+has done nothing other than deleting the updater lock file.
+
+In this releae, we actually implement the --uninstall option, to delete
+everything that we know we own by checking the manifests, as well as
+cleaning up any empty directories and files of certain file types that
+we may have left around.  We have also implemented a similiar --cleanup
+option that can be called from the installer, to clean out an old
+install in preparation for a new one.
+
+A bug has been fixed when performing manual updates in cases in which
+automatic updates are disabled.
+
+Brian Campbell (16):
+      Installer: Don't wait on launched program when run at end of Setup
+      UpdateInstaller: Extract InstallTool superclass, add new Uninstaller class
+      UpdateInstaller: Factor out setup code in test cases
+      UpdateInstaller: Pull more functionality up into InstallTool
+      UpdateInstaller: Pull BuildCleanupRecursive into InstallTool
+      UpdateInstaller: Look in correct directory for Halyard to launch when done
+      UpdateInstaller: Perform cleanup from Uninstall
+      Build fix: Disable precompiled headers on new UpdateInstaller files
+      UpdateInstaller: Add better logging of failed updates and uninstalls
+      UpdateInstaller: Don't try to delete UpdateInstaller.exe during uninstall
+      UpdateInstaller: Create lock file if possible during uninstall
+      UpdateInstaller: Make sure we don't appear frozen while preparing
+      UpdateInstaller: If file needed from tree does not exist, keep looking
+      UpdateInstaller: Remove AUTO-UPDATE from manifests
+      Installer: Uninstall an existing program before installing
+      UpdateInstaller: Distinguish --cleanup and --uninstall cases
+
 0.6.2 - 16 Nov 2009
 
 This release includes a few tweaks to buildscript's Inno Setup support;
