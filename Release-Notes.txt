@@ -1,3 +1,11 @@
+0.6.4 - 21 Dec 2009
+
+This release fixes a bug in which our Inno Setup version check wasn't
+supported by our Inno Setup parser.
+
+Brian Campbell (1):
+      buildscript: inno_setup.rb: Allow version checking preprocessor directives
+
 0.6.3 - 20 Dec 2009
 
 This release adds support to the UpdateInstaller for uninstalling a previous
